@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:mhdcooperation/data/services/session_service.dart';
 import '../controllers/admin_metrics_controller.dart';
 
 class AdminMetricsView extends GetView<AdminMetricsController> {
   const AdminMetricsView({super.key});
+
+  bool get _isSadmin {
+    final role = Get.find<SessionService>().currentUser.value?.role.toUpperCase();
+    return role == 'SADMIN';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,16 +71,18 @@ class AdminMetricsView extends GetView<AdminMetricsController> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(
-                    child: _buildMetricCard(
-                      'Revenus',
-                      controller.formatCurrency(controller.totalRevenue.value),
-                      Icons.attach_money,
-                      Colors.orange,
-                      'Total',
+                  if (_isSadmin) ...[
+                    Expanded(
+                      child: _buildMetricCard(
+                        'Revenus',
+                        controller.formatCurrency(controller.totalRevenue.value),
+                        Icons.attach_money,
+                        Colors.orange,
+                        'Total',
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
+                    const SizedBox(width: 12),
+                  ],
                   Expanded(
                     child: _buildMetricCard(
                       'Dossiers Actifs',
@@ -89,93 +97,92 @@ class AdminMetricsView extends GetView<AdminMetricsController> {
 
               const SizedBox(height: 32),
 
-              // Graphique des revenus par service
-              const Text(
-                'Revenus par Service',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                height: 300,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withAlpha(25),
-                      spreadRadius: 1,
-                      blurRadius: 5,
-                    ),
-                  ],
+              // Section revenus — SADMIN uniquement
+              if (_isSadmin) ...[
+                const Text(
+                  'Revenus par Service',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                child: PieChart(
-                  PieChartData(
-                    sections: controller.revenueByService.map((service) {
-                      final colors = [
-                        Colors.blue,
-                        Colors.green,
-                        Colors.orange,
-                        Colors.red,
-                        Colors.purple,
-                      ];
-                      final index = controller.revenueByService.indexOf(
-                        service,
-                      );
-                      return PieChartSectionData(
-                        value: service['percentage'],
-                        title: '${service['percentage']}%',
-                        color: colors[index % colors.length],
-                        radius: 80,
-                        titleStyle: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      );
-                    }).toList(),
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 40,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-              // Légende du graphique
-              Wrap(
-                spacing: 16,
-                runSpacing: 8,
-                children: controller.revenueByService.map((service) {
-                  final colors = [
-                    Colors.blue,
-                    Colors.green,
-                    Colors.orange,
-                    Colors.red,
-                    Colors.purple,
-                  ];
-                  final index = controller.revenueByService.indexOf(service);
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: colors[index % colors.length],
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        service['service'],
-                        style: const TextStyle(fontSize: 12),
+                const SizedBox(height: 16),
+                Container(
+                  height: 300,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withAlpha(25),
+                        spreadRadius: 1,
+                        blurRadius: 5,
                       ),
                     ],
-                  );
-                }).toList(),
-              ),
-
-              const SizedBox(height: 32),
+                  ),
+                  child: PieChart(
+                    PieChartData(
+                      sections: controller.revenueByService.map((service) {
+                        final colors = [
+                          Colors.blue,
+                          Colors.green,
+                          Colors.orange,
+                          Colors.red,
+                          Colors.purple,
+                        ];
+                        final index =
+                            controller.revenueByService.indexOf(service);
+                        return PieChartSectionData(
+                          value: service['percentage'],
+                          title: '${service['percentage']}%',
+                          color: colors[index % colors.length],
+                          radius: 80,
+                          titleStyle: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        );
+                      }).toList(),
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 40,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 8,
+                  children: controller.revenueByService.map((service) {
+                    final colors = [
+                      Colors.blue,
+                      Colors.green,
+                      Colors.orange,
+                      Colors.red,
+                      Colors.purple,
+                    ];
+                    final index =
+                        controller.revenueByService.indexOf(service);
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: colors[index % colors.length],
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          service['service'],
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 32),
+              ],
 
               // Graphique de croissance des utilisateurs
               const Text(
@@ -187,7 +194,7 @@ class AdminMetricsView extends GetView<AdminMetricsController> {
                 height: 300,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(

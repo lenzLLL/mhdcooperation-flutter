@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/core/values/app_colors.dart';
 import 'package:mhdcooperation/modules/all_concours/controllers/all_concours_controller.dart';
 import 'package:mhdcooperation/data/models/concours.dart';
 
@@ -35,19 +36,19 @@ class AllConcoursView extends GetView<AllConcoursController> {
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  Widget _buildConcoursCard(Concours concours) {
+  Widget _buildConcoursCard(BuildContext context, Concours concours) {
     return GestureDetector(
       onTap: () => controller.onConcoursTap(concours),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withAlpha(25),
-              spreadRadius: 1,
-              blurRadius: 8,
+              color: AppColors.primary.withAlpha(20),
+              spreadRadius: 0,
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
@@ -65,43 +66,44 @@ class AllConcoursView extends GetView<AllConcoursController> {
                   ),
                   child: concours.photoUrl != null
                       ? concours.photoUrl!.startsWith('assets/')
-                          ? Image.asset(
-                              concours.photoUrl!,
-                              height: 160,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
+                            ? Image.asset(
+                                concours.photoUrl!,
                                 height: 160,
-                                color: Colors.grey[300],
-                                child: Icon(
-                                  Icons.school,
-                                  color: Colors.grey[600],
-                                  size: 50,
-                                ),
-                              ),
-                            )
-                          : CachedNetworkImage(
-                              imageUrl: concours.photoUrl!,
-                              height: 160,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      height: 160,
+                                      color: Colors.grey[300],
+                                      child: Icon(
+                                        Icons.school,
+                                        color: Colors.grey[600],
+                                        size: 50,
+                                      ),
+                                    ),
+                              )
+                            : CachedNetworkImage(
+                                imageUrl: concours.photoUrl!,
                                 height: 160,
-                                color: Colors.grey[300],
-                                child: const Center(
-                                  child: CircularProgressIndicator(),
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  height: 160,
+                                  color: Colors.grey[300],
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
                                 ),
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                height: 160,
-                                color: Colors.grey[300],
-                                child: Icon(
-                                  Icons.school,
-                                  color: Colors.grey[600],
-                                  size: 50,
+                                errorWidget: (context, url, error) => Container(
+                                  height: 160,
+                                  color: Colors.grey[300],
+                                  child: Icon(
+                                    Icons.school,
+                                    color: Colors.grey[600],
+                                    size: 50,
+                                  ),
                                 ),
-                              ),
-                            )
+                              )
                       : Container(
                           height: 160,
                           color: Colors.grey[300],
@@ -123,7 +125,9 @@ class AllConcoursView extends GetView<AllConcoursController> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(179), // 0.7 * 255
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primary, AppColors.primaryLight],
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -190,15 +194,15 @@ class AllConcoursView extends GetView<AllConcoursController> {
                                 Icon(
                                   Icons.calendar_today,
                                   size: 14,
-                                  color: Colors.blue[600],
+                                  color: AppColors.primary,
                                 ),
                                 const SizedBox(width: 4),
-                                const Text(
+                                Text(
                                   'Date',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.black87,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                               ],
@@ -206,9 +210,9 @@ class AllConcoursView extends GetView<AllConcoursController> {
                             const SizedBox(height: 2),
                             Text(
                               _formatDate(concours.startDate),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.black87,
+                                color: Theme.of(context).colorScheme.onSurface.withAlpha(178),
                               ),
                             ),
                           ],
@@ -225,15 +229,15 @@ class AllConcoursView extends GetView<AllConcoursController> {
                                 Icon(
                                   Icons.money,
                                   size: 14,
-                                  color: Colors.green[600],
+                                  color: AppColors.success,
                                 ),
                                 const SizedBox(width: 4),
-                                const Text(
+                                Text(
                                   'Frais',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.black87,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                               ],
@@ -241,9 +245,9 @@ class AllConcoursView extends GetView<AllConcoursController> {
                             const SizedBox(height: 2),
                             Text(
                               '${concours.applicationFees ?? 0} FCFA',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.black87,
+                                color: Theme.of(context).colorScheme.onSurface.withAlpha(178),
                               ),
                             ),
                           ],
@@ -346,6 +350,42 @@ class AllConcoursView extends GetView<AllConcoursController> {
             return const Center(child: CircularProgressIndicator());
           }
 
+          if (controller.hasError.value) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      controller.errorMessage.value,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: controller.loadConcours,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Réessayer'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
           return TabBarView(
             children: [
               // Onglet "À venir"
@@ -378,7 +418,7 @@ class AllConcoursView extends GetView<AllConcoursController> {
                         itemCount: controller.upcomingConcours.length,
                         itemBuilder: (context, index) {
                           final concours = controller.upcomingConcours[index];
-                          return _buildConcoursCard(concours);
+                          return _buildConcoursCard(context, concours);
                         },
                       ),
               ),
@@ -412,7 +452,7 @@ class AllConcoursView extends GetView<AllConcoursController> {
                         itemCount: controller.pastConcours.length,
                         itemBuilder: (context, index) {
                           final concours = controller.pastConcours[index];
-                          return _buildConcoursCard(concours);
+                          return _buildConcoursCard(context, concours);
                         },
                       ),
               ),

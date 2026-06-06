@@ -47,9 +47,9 @@ class AllServicesController extends GetxController {
         ),
         Services(
           id: '4',
-          name: 'Dossiers certification IDE',
+          name: 'Certificat de police',
           desc:
-              'Constituez vos dossiers de certification IDE facilement et rapidement grace à notre équipe expérimenté et dynamique',
+              'Constituez votre certificat de police facilement et rapidement grâce à notre équipe expérimentée et dynamique',
           iconUrl: 'https://via.placeholder.com/100/9C27B0/FFFFFF?text=P',
         ),
         Services(

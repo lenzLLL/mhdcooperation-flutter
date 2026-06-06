@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/core/values/app_colors.dart';
 import 'package:mhdcooperation/modules/all_schools/controllers/all_schools_controller.dart';
 
 class AllSchoolsView extends GetView<AllSchoolsController> {
@@ -15,6 +16,38 @@ class AllSchoolsView extends GetView<AllSchoolsController> {
           return const Center(child: CircularProgressIndicator());
         }
 
+        if (controller.hasError.value) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    controller.errorMessage.value,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: controller.loadSchools,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Réessayer'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         return RefreshIndicator(
           onRefresh: controller.loadSchools,
           child: ListView.builder(
@@ -27,14 +60,20 @@ class AllSchoolsView extends GetView<AllSchoolsController> {
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border(
+                      left: BorderSide(
+                        color: AppColors.primary.withAlpha(200),
+                        width: 4,
+                      ),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withAlpha(25),
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
+                        color: AppColors.primary.withAlpha(18),
+                        spreadRadius: 0,
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),

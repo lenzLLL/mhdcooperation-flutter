@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mhdcooperation/core/values/app_colors.dart';
 import 'package:mhdcooperation/data/services/session_service.dart';
+import 'package:mhdcooperation/routes/app_routes.dart';
 import 'package:mhdcooperation/modules/admin_transactions/bindings/admin_transactions_binding.dart';
 import 'package:mhdcooperation/modules/admin_transactions/views/admin_transactions_view.dart';
 import 'package:mhdcooperation/modules/admin_dossiers/bindings/admin_dossiers_binding.dart';
@@ -11,6 +13,10 @@ import 'package:mhdcooperation/modules/admin_metrics/bindings/admin_metrics_bind
 import 'package:mhdcooperation/modules/admin_metrics/views/admin_metrics_view.dart';
 import 'package:mhdcooperation/modules/admin_users/bindings/admin_users_binding.dart';
 import 'package:mhdcooperation/modules/admin_users/views/admin_users_view.dart';
+import 'package:mhdcooperation/modules/admin_schools/bindings/admin_schools_binding.dart';
+import 'package:mhdcooperation/modules/admin_schools/views/admin_schools_view.dart';
+import 'package:mhdcooperation/modules/admin_concours/bindings/admin_concours_binding.dart';
+import 'package:mhdcooperation/modules/admin_concours/views/admin_concours_view.dart';
 import 'package:mhdcooperation/modules/all_concours/views/all_concours_view.dart';
 import 'package:mhdcooperation/modules/home/views/home_view.dart';
 import 'package:mhdcooperation/modules/all_schools/views/all_schools_view.dart';
@@ -32,21 +38,16 @@ class MainLayoutView extends GetView<MainLayoutController> {
     return Scaffold(
       key: controller.scaffoldKey,
       drawer: Drawer(
-        backgroundColor: const Color(0xff10121D),
+        backgroundColor: AppColors.backgroundDark,
         child: Column(
           children: [
             // Header with user info
             Container(
-              height: 200,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(25),
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.primary.withAlpha(51),
-                    AppColors.primary.withAlpha(13),
-                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.primary, AppColors.primaryLight],
                 ),
               ),
               child: SafeArea(
@@ -62,23 +63,8 @@ class MainLayoutView extends GetView<MainLayoutController> {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(50),
-                              child: user?.pictureUrl != null
-                                  ? CachedNetworkImage(
-                                      imageUrl: user!.pictureUrl!,
-                                      width: 60,
-                                      height: 60,
-                                      fit: BoxFit.cover,
-                                      placeholder: (context, url) =>
-                                          const CircleAvatar(
-                                            radius: 30,
-                                            child: Icon(Icons.person, size: 30),
-                                          ),
-                                      errorWidget: (context, url, error) =>
-                                          const CircleAvatar(
-                                            radius: 30,
-                                            child: Icon(Icons.person, size: 30),
-                                          ),
-                                    )
+                              child: user?.pictureUrl?.isNotEmpty == true
+                                  ? _buildDrawerProfileImage(user!.pictureUrl!)
                                   : const CircleAvatar(
                                       radius: 30,
                                       child: Icon(Icons.person, size: 30),
@@ -125,9 +111,13 @@ class MainLayoutView extends GetView<MainLayoutController> {
                             color: Colors.white.withAlpha(25),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Text(
-                            'Membre Premium',
-                            style: TextStyle(
+                          child: Text(
+                            user?.role == 'SADMIN'
+                                ? 'Super Admin'
+                                : user?.role == 'ADMIN'
+                                ? 'Admin'
+                                : 'Utilisateur',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -178,80 +168,117 @@ class MainLayoutView extends GetView<MainLayoutController> {
                     },
                   ),
                   const Divider(color: Colors.white24, height: 1),
-                  IconTextRow(
-                    title: "Paramètres",
-                    icon: Icons.settings_outlined,
-                    onTap: () {
-                      // TODO: Navigate to settings
-                    },
-                  ),
-                  IconTextRow(
-                    title: "Aide & Support",
-                    icon: Icons.help_outline,
-                    onTap: () {
-                      // TODO: Navigate to help
-                    },
-                  ),
-                  const Divider(color: Colors.white24, height: 1),
-                  // Section Admin
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: const Text(
-                      'Administration',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  IconTextRow(
-                    title: "Tableau de Bord",
-                    icon: Icons.dashboard,
-                    onTap: () {
-                      Get.to(
-                        () => const AdminMetricsView(),
-                        binding: AdminMetricsBinding(),
+                  // Conditional menu based on user role
+                  Obx(() {
+                    final sessionService = Get.find<SessionService>();
+                    final user = sessionService.currentUser.value;
+                    final role = user?.role.toUpperCase();
+                    final isAdmin = role == 'ADMIN' || role == 'SADMIN';
+
+                    if (isAdmin) {
+                      final isSadmin = role == 'SADMIN';
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: const Text(
+                              textAlign: TextAlign.left,
+                              'Administration',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          // Tableau de bord (revenus) : SADMIN uniquement
+                          if (isSadmin)
+                            IconTextRow(
+                              title: "Tableau de Bord",
+                              icon: Icons.dashboard,
+                              onTap: () {
+                                Get.to(
+                                  () => const AdminMetricsView(),
+                                  binding: AdminMetricsBinding(),
+                                );
+                                controller.closeDrawer();
+                              },
+                            ),
+                          // Transactions (données financières) : SADMIN uniquement
+                          if (isSadmin)
+                            IconTextRow(
+                              title: "Transactions",
+                              icon: Icons.receipt_long,
+                              onTap: () {
+                                Get.to(
+                                  () => const AdminTransactionsView(),
+                                  binding: AdminTransactionsBinding(),
+                                );
+                                controller.closeDrawer();
+                              },
+                            ),
+                          IconTextRow(
+                            title: "Gestion Dossiers",
+                            icon: Icons.folder_special,
+                            onTap: () {
+                              Get.to(
+                                () => const AdminDossiersView(),
+                                binding: AdminDossiersBinding(),
+                              );
+                              controller.closeDrawer();
+                            },
+                          ),
+                          IconTextRow(
+                            title: "Utilisateurs",
+                            icon: Icons.people,
+                            onTap: () {
+                              Get.to(
+                                () => const AdminUsersView(),
+                                binding: AdminUsersBinding(),
+                              );
+                              controller.closeDrawer();
+                            },
+                          ),
+                          IconTextRow(
+                            title: "Gestion des Écoles",
+                            icon: Icons.school,
+                            onTap: () {
+                              Get.to(
+                                () => const AdminSchoolsView(),
+                                binding: AdminSchoolsBinding(),
+                              );
+                              controller.closeDrawer();
+                            },
+                          ),
+                          IconTextRow(
+                            title: "Gestion des Concours",
+                            icon: Icons.menu_book,
+                            onTap: () {
+                              Get.to(
+                                () => const AdminConcoursView(),
+                                binding: AdminConcoursBinding(),
+                              );
+                              controller.closeDrawer();
+                            },
+                          ),
+                        ],
                       );
-                      controller.closeDrawer();
-                    },
-                  ),
-                  IconTextRow(
-                    title: "Transactions",
-                    icon: Icons.receipt_long,
-                    onTap: () {
-                      Get.to(
-                        () => const AdminTransactionsView(),
-                        binding: AdminTransactionsBinding(),
+                    } else {
+                      return IconTextRow(
+                        title: "Mes documents",
+                        icon: Icons.folder_open,
+                        onTap: () {
+                          Get.toNamed(AppRoutes.userDossiers);
+                          controller.closeDrawer();
+                        },
                       );
-                      controller.closeDrawer();
-                    },
-                  ),
-                  IconTextRow(
-                    title: "Gestion Dossiers",
-                    icon: Icons.folder_special,
-                    onTap: () {
-                      Get.to(
-                        () => const AdminDossiersView(),
-                        binding: AdminDossiersBinding(),
-                      );
-                      controller.closeDrawer();
-                    },
-                  ),
-                  IconTextRow(
-                    title: "Utilisateurs",
-                    icon: Icons.people,
-                    onTap: () {
-                      Get.to(
-                        () => const AdminUsersView(),
-                        binding: AdminUsersBinding(),
-                      );
-                      controller.closeDrawer();
-                    },
-                  ),
+                    }
+                  }),
                 ],
               ),
             ),
@@ -290,41 +317,68 @@ class MainLayoutView extends GetView<MainLayoutController> {
         ),
       ),
       bottomNavigationBar: Obx(
-        () => BottomNavigationBar(
-          currentIndex: controller.currentIndex.value,
-          onTap: controller.changePage,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color.fromARGB(255, 47, 50, 231),
-          unselectedItemColor: const Color.fromARGB(255, 37, 37, 37),
-          selectedFontSize: 12,
-          unselectedFontSize: 11,
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              activeIcon: Icon(Icons.home),
+        () => NavigationBar(
+          selectedIndex: controller.currentIndex.value,
+          onDestinationSelected: controller.changePage,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          indicatorColor: AppColors.primary.withAlpha(30),
+          height: 68,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded, color: AppColors.primary),
               label: 'Accueil',
             ),
-
-            BottomNavigationBarItem(
-              icon: Icon(Icons.menu_book_outlined),
-              activeIcon: Icon(Icons.menu_book),
+            NavigationDestination(
+              icon: const Icon(Icons.menu_book_outlined),
+              selectedIcon: Icon(Icons.menu_book, color: AppColors.primary),
               label: 'Concours',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.school_outlined),
-              activeIcon: Icon(Icons.school),
-              label: 'Ecoles',
+            NavigationDestination(
+              icon: const Icon(Icons.school_outlined),
+              selectedIcon: Icon(Icons.school, color: AppColors.primary),
+              label: 'Écoles',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              activeIcon: Icon(Icons.person),
+            NavigationDestination(
+              icon: const Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person, color: AppColors.primary),
               label: 'Profil',
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDrawerProfileImage(String pictureUrl) {
+    if (pictureUrl.startsWith('http')) {
+      return CachedNetworkImage(
+        imageUrl: pictureUrl,
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        placeholder: (context, url) =>
+            const CircleAvatar(radius: 30, child: Icon(Icons.person, size: 30)),
+        errorWidget: (context, url, error) =>
+            const CircleAvatar(radius: 30, child: Icon(Icons.person, size: 30)),
+      );
+    }
+
+    final file = File(pictureUrl);
+    if (file.existsSync()) {
+      return Image.file(file, width: 60, height: 60, fit: BoxFit.cover);
+    }
+
+    return CachedNetworkImage(
+      imageUrl: pictureUrl,
+      width: 60,
+      height: 60,
+      fit: BoxFit.cover,
+      placeholder: (context, url) =>
+          const CircleAvatar(radius: 30, child: Icon(Icons.person, size: 30)),
+      errorWidget: (context, url, error) =>
+          const CircleAvatar(radius: 30, child: Icon(Icons.person, size: 30)),
     );
   }
 }

@@ -1,12 +1,17 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../core/utils/app_config.dart';
 import 'controllers/theme_controller.dart';
+import 'data/services/auth_service.dart';
 import 'data/services/cache_service.dart';
+import 'data/services/dossier_service.dart';
 import 'data/services/logger_service.dart';
+import 'data/services/push_notification_service.dart';
 import 'data/services/session_service.dart';
 import 'data/services/storage_service.dart';
+import 'firebase_options.dart';
 import 'core/values/app_strings.dart';
 import 'routes/app_page.dart';
 
@@ -14,6 +19,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Get.putAsync(() => LoggerService().init());
   await AppConfig().initialize();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await _initServices();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -37,11 +43,10 @@ Future<void> _initServices() async {
 
   // Session and cache services
   await Get.putAsync(() => SessionService().init());
+  await Get.putAsync(() => AuthService().init());
   await Get.putAsync(() => CacheService().init());
-
-  // API Service
-
-  // Bible Service
+  await Get.putAsync(() => DossierService().init());
+  await Get.putAsync(() => PushNotificationService().init());
 
   // Theme Controller (must be after StorageService)
   Get.put(ThemeController());

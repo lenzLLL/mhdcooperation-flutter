@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 
-/// Application Color Palette
+/// Application Color Palette — inspired by MHD Cooperation logo
+/// Logo palette: deep navy (#1A3A6E) · royal blue (#2864BC) · sky blue (#3BA8D5)
 class AppColors {
-  // Primary Colors
-  static const Color primary = Color(0xFF6366F1); // Indigo
-  static const Color primaryDark = Color(0xFF4F46E5);
-  static const Color primaryLight = Color(0xFF818CF8);
+  // Primary Colors (deep navy — logo briefcase)
+  static const Color primary = Color(0xFF1A3A6E);
+  static const Color primaryDark = Color(0xFF0E2347);
+  static const Color primaryLight = Color(0xFF2864BC);
 
-  // Secondary Colors
-  static const Color secondary = Color(0xFF10B981); // Emerald
-  static const Color secondaryDark = Color(0xFF059669);
-  static const Color secondaryLight = Color(0xFF34D399);
+  // Secondary Colors (sky blue — logo document pages)
+  static const Color secondary = Color(0xFF3BA8D5);
+  static const Color secondaryDark = Color(0xFF1E8BBD);
+  static const Color secondaryLight = Color(0xFF6CC5E8);
 
-  // Accent Colors
-  static const Color accent = Color(0xFFF59E0B); // Amber
+  // Accent Colors (amber — warm contrast with blues)
+  static const Color accent = Color(0xFFF59E0B);
   static const Color accentDark = Color(0xFFD97706);
   static const Color accentLight = Color(0xFFFBBF24);
 
@@ -25,46 +26,46 @@ class AppColors {
   static const Color greyDark = Color(0xFF4B5563);
 
   // Background Colors
-  static const Color background = Color(0xFFF9FAFB);
-  static const Color backgroundDark = Color(0xFF111827);
+  static const Color background = Color(0xFFF0F4F8);
+  static const Color backgroundDark = Color(0xFF0D1B2A);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceDark = Color(0xFF1F2937);
+  static const Color surfaceDark = Color(0xFF1A2E42);
 
   // Text Colors
-  static const Color textPrimary = Color(0xFF111827);
-  static const Color textSecondary = Color(0xFF6B7280);
+  static const Color textPrimary = Color(0xFF0E2347);
+  static const Color textSecondary = Color(0xFF5A7184);
   static const Color textDisabled = Color(0xFF9CA3AF);
-  static const Color textPrimaryDark = Color(0xFFF9FAFB);
-  static const Color textSecondaryDark = Color(0xFF9CA3AF);
+  static const Color textPrimaryDark = Color(0xFFF0F4F8);
+  static const Color textSecondaryDark = Color(0xFF8BAFC7);
 
   // Status Colors
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
   static const Color warning = Color(0xFFF59E0B);
-  static const Color info = Color(0xFF3B82F6);
+  static const Color info = Color(0xFF3BA8D5);
 
   // Content Type Colors
-  static const Color videoColor = Color(0xFFEC4899); // Pink
-  static const Color audioColor = Color(0xFF8B5CF6); // Purple
-  static const Color articleColor = Color(0xFF06B6D4); // Cyan
-  static const Color eventColor = Color(0xFFF59E0B); // Amber
-  static const Color bookColor = Color(0xFF10B981); // Emerald
+  static const Color videoColor = Color(0xFFEC4899);
+  static const Color audioColor = Color(0xFF8B5CF6);
+  static const Color articleColor = Color(0xFF06B6D4);
+  static const Color eventColor = Color(0xFFF59E0B);
+  static const Color bookColor = Color(0xFF10B981);
 
   // Church Colors
-  static const Color churchPrimary = Color(0xFF6366F1);
+  static const Color churchPrimary = Color(0xFF1A3A6E);
   static const Color donationColor = Color(0xFF10B981);
   static const Color testimonyColor = Color(0xFFF59E0B);
 
   // Border Colors
-  static const Color border = Color(0xFFE5E7EB);
-  static const Color borderDark = Color(0xFF374151);
+  static const Color border = Color(0xFFD1E0EE);
+  static const Color borderDark = Color(0xFF243B53);
 
   // Divider Colors
-  static const Color divider = Color(0xFFE5E7EB);
-  static const Color dividerDark = Color(0xFF374151);
+  static const Color divider = Color(0xFFD1E0EE);
+  static const Color dividerDark = Color(0xFF243B53);
 
   // Shadow Colors
-  static const Color shadow = Color(0x1A000000);
+  static const Color shadow = Color(0x1A1A3A6E);
   static const Color shadowDark = Color(0x4D000000);
 
   // Overlay Colors
@@ -72,22 +73,38 @@ class AppColors {
   static const Color overlayLight = Color(0x40000000);
 
   // Gradient Colors
+  /// Full brand gradient: navy → sky blue (mirrors the logo)
+  static const LinearGradient brandGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF1A3A6E), Color(0xFF3BA8D5)],
+  );
+
+  /// Primary gradient: navy → royal blue
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [primary, primaryLight],
+    colors: [Color(0xFF1A3A6E), Color(0xFF2864BC)],
   );
 
+  /// Secondary gradient: royal blue → sky blue
   static const LinearGradient secondaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [secondary, secondaryLight],
+    colors: [Color(0xFF2864BC), Color(0xFF3BA8D5)],
+  );
+
+  /// Vertical brand gradient (top → bottom) for headers
+  static const LinearGradient verticalGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF1A3A6E), Color(0xFF2864BC)],
   );
 
   static const LinearGradient accentGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [accent, accentLight],
+    colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
   );
 
   // Content Type Gradients

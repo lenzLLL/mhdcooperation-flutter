@@ -1,14 +1,23 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/data/services/dossier_service.dart';
+import 'package:mhdcooperation/data/models/dossier_model.dart';
 
 class AdminDossiersController extends GetxController {
+  final DossierService _dossierService = Get.find<DossierService>();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   // Données observables
   final RxList<Map<String, dynamic>> dossiers = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> _allDossiers =
+      <Map<String, dynamic>>[].obs;
   final RxBool isLoading = true.obs;
 
   // Filtres
   final RxString selectedFilter = 'all'.obs;
   final RxString selectedStatus = 'all'.obs;
+  final RxString selectedCity = 'all'.obs;
 
   @override
   void onInit() {
@@ -19,94 +28,116 @@ class AdminDossiersController extends GetxController {
   Future<void> loadDossiers() async {
     try {
       isLoading.value = true;
+      dossiers.clear();
+      _allDossiers.clear();
 
-      // Simulation de chargement des données
-      await Future.delayed(const Duration(seconds: 2));
+      final loaded = await _dossierService.loadAllDossiersFromFirestore();
 
-      // Données de démonstration pour les dossiers
-      dossiers.assignAll([
-        {
-          'id': '1',
-          'userName': 'Jean Dupont',
-          'userEmail': 'jean@example.com',
-          'type': 'Concours Polytechnique',
-          'status': 'en_cours',
-          'dateCreation': DateTime.now().subtract(const Duration(days: 5)),
-          'dateModification': DateTime.now().subtract(const Duration(hours: 2)),
-          'documents': ['CV', 'Diplôme', 'Certificat'],
-          'montant': 25000,
-          'echeance': DateTime.now().add(const Duration(days: 10)),
-        },
-        {
-          'id': '2',
-          'userName': 'Marie Claire',
-          'userEmail': 'marie@example.com',
-          'type': 'Passeport/CNI',
-          'status': 'valide',
-          'dateCreation': DateTime.now().subtract(const Duration(days: 12)),
-          'dateModification': DateTime.now().subtract(const Duration(days: 1)),
-          'documents': [
-            'Photo',
-            'Acte de naissance',
-            'Certificat de résidence',
-          ],
-          'montant': 15000,
-          'echeance': DateTime.now().add(const Duration(days: 25)),
-        },
-        {
-          'id': '3',
-          'userName': 'Pierre Martin',
-          'userEmail': 'pierre@example.com',
-          'type': 'Inscription Universitaire',
-          'status': 'incomplet',
-          'dateCreation': DateTime.now().subtract(const Duration(days: 8)),
-          'dateModification': DateTime.now().subtract(
-            const Duration(hours: 12),
-          ),
-          'documents': ['Diplôme', 'Certificat médical'],
-          'montant': 35000,
-          'echeance': DateTime.now().add(const Duration(days: 15)),
-        },
-        {
-          'id': '4',
-          'userName': 'Sophie Dubois',
-          'userEmail': 'sophie@example.com',
-          'type': 'Certification IDE',
-          'status': 'rejete',
-          'dateCreation': DateTime.now().subtract(const Duration(days: 15)),
-          'dateModification': DateTime.now().subtract(const Duration(days: 3)),
-          'documents': ['CV', 'Lettre de motivation', 'Attestation'],
-          'montant': 20000,
-          'echeance': DateTime.now().subtract(const Duration(days: 2)),
-        },
-        {
-          'id': '5',
-          'userName': 'Antoine Leroy',
-          'userEmail': 'antoine@example.com',
-          'type': 'Rapport de Stage',
-          'status': 'valide',
-          'dateCreation': DateTime.now().subtract(const Duration(days: 20)),
-          'dateModification': DateTime.now().subtract(const Duration(days: 5)),
-          'documents': ['Rapport', 'Attestation de stage', 'Évaluation'],
-          'montant': 18000,
-          'echeance': DateTime.now().add(const Duration(days: 30)),
-        },
-      ]);
-    } catch (e) {
-      print('Erreur lors du chargement des dossiers: $e');
+      // Batch-fetch user cities
+      final userIds =
+          loaded.map((d) => d.userId).where((id) => id.isNotEmpty).toSet();
+      final cityMap = await _fetchUserCities(userIds.toList());
+
+      final mapped = loaded
+          .map((d) => _mapDossier(d, cityMap[d.userId]))
+          .toList();
+      _allDossiers.assignAll(mapped);
+      _applyFilters();
+    } catch (_) {
+      _allDossiers.clear();
+      dossiers.clear();
     } finally {
       isLoading.value = false;
     }
   }
 
+  Future<Map<String, String>> _fetchUserCities(List<String> userIds) async {
+    final result = <String, String>{};
+    if (userIds.isEmpty) return result;
+    const chunkSize = 10;
+    for (var i = 0; i < userIds.length; i += chunkSize) {
+      final chunk = userIds.sublist(
+        i,
+        (i + chunkSize) > userIds.length ? userIds.length : i + chunkSize,
+      );
+      try {
+        final snap = await _firestore
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+        for (final doc in snap.docs) {
+          result[doc.id] = doc.data()['city']?.toString() ?? '';
+        }
+      } catch (_) {}
+    }
+    return result;
+  }
+
+  Map<String, dynamic> _mapDossier(DossierModel dossier, String? city) {
+    return {
+      'id': dossier.id,
+      'userId': dossier.userId,
+      'userName': dossier.userName ?? dossier.userId,
+      'userEmail': dossier.userEmail ?? '',
+      'city': city ?? '',
+      'type': dossier.itemTitle?.trim().isNotEmpty == true
+          ? dossier.itemTitle
+          : dossier.itemType,
+      'status': dossier.status,
+      'dateCreation': dossier.createdAt,
+      'dateModification': dossier.updatedAt,
+      'documents': <String>[],
+      'montant': dossier.amount?.toInt() ?? 0,
+    };
+  }
+
   void filterDossiers(String filter) {
     selectedFilter.value = filter;
-    // TODO: Implémenter le filtrage
+    _applyFilters();
   }
 
   void filterByStatus(String status) {
     selectedStatus.value = status;
-    // TODO: Implémenter le filtrage par statut
+    _applyFilters();
+  }
+
+  void filterByCity(String city) {
+    selectedCity.value = city;
+    _applyFilters();
+  }
+
+  List<String> getAllCities() {
+    final cities = <String>{};
+    for (final d in _allDossiers) {
+      final city = d['city'] as String?;
+      if (city != null && city.isNotEmpty) cities.add(city);
+    }
+    return ['all', ...cities.toList()..sort()];
+  }
+
+  void _applyFilters() {
+    final filtered = _allDossiers.where((dossier) {
+      if (selectedStatus.value != 'all' &&
+          dossier['status']?.toString() != selectedStatus.value) {
+        return false;
+      }
+
+      if (selectedCity.value != 'all' &&
+          dossier['city']?.toString() != selectedCity.value) {
+        return false;
+      }
+
+      if (selectedFilter.value == 'recent') {
+        final createdAt = dossier['dateCreation'] as DateTime;
+        return createdAt.isAfter(
+          DateTime.now().subtract(const Duration(days: 7)),
+        );
+      }
+
+      return true;
+    }).toList();
+
+    dossiers.assignAll(filtered);
   }
 
   String formatAmount(int amount) {
@@ -147,7 +178,22 @@ class AdminDossiersController extends GetxController {
     }
   }
 
-  bool isExpired(DateTime echeance) {
-    return echeance.isBefore(DateTime.now());
+  int get totalDossiers => _allDossiers.length;
+
+  int get validDossiers => _allDossiers
+      .where((dossier) => dossier['status'] == 'valide')
+      .length;
+
+  int get inProgressDossiers => _allDossiers
+      .where((dossier) => dossier['status'] == 'en_cours')
+      .length;
+
+  int get incompleteDossiers => _allDossiers
+      .where((dossier) => dossier['status'] == 'incomplet')
+      .length;
+
+  bool isExpired(DateTime? echeance) {
+    // No expiration logic - return false
+    return false;
   }
 }

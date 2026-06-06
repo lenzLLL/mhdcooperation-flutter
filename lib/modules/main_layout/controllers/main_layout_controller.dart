@@ -5,6 +5,7 @@ import 'package:mhdcooperation/modules/all_services/controllers/all_services_con
 import 'package:mhdcooperation/modules/all_schools/controllers/all_schools_controller.dart';
 import 'package:mhdcooperation/modules/profile/controllers/profile_controller.dart';
 import 'package:mhdcooperation/routes/app_routes.dart';
+import 'package:mhdcooperation/data/services/auth_service.dart';
 
 class MainLayoutController extends GetxController {
   final RxInt currentIndex = 0.obs;
@@ -38,9 +39,19 @@ class MainLayoutController extends GetxController {
     scaffoldKey.currentState?.openDrawer();
   }
 
-  void logout() {
-    // TODO: Implement logout logic
-    // For now, navigate to login
-    Get.offAllNamed(AppRoutes.login);
+  Future<void> logout() async {
+    try {
+      final authService = Get.find<AuthService>();
+      await authService.signOut();
+      Get.offAllNamed(AppRoutes.login);
+    } catch (e) {
+      Get.showSnackbar(
+        GetSnackBar(
+          title: 'Erreur',
+          message: 'Erreur lors de la déconnexion',
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 }

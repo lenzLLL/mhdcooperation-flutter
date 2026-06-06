@@ -1,5 +1,3 @@
-import 'package:mhdcooperation/data/models/dossier_model.dart';
-
 /// User Model - Maps to backend User entity
 class UserModel {
   final String id;
@@ -9,7 +7,7 @@ class UserModel {
   final String role;
   final String? email;
   final String? city;
-  final List<DossierModel> dossiers;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,7 +19,6 @@ class UserModel {
     this.role = 'USER',
     this.email,
     this.city,
-    this.dossiers = const [],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -66,17 +63,19 @@ class UserModel {
     String? pictureUrl,
     String? email,
     String? city,
+    String? phoneNumber,
+    DateTime? updatedAt,
   }) {
     return UserModel(
       id: id,
       name: name ?? this.name,
-      phoneNumber: phoneNumber,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
       pictureUrl: pictureUrl ?? this.pictureUrl,
       role: role,
       email: email ?? this.email,
       city: city ?? this.city,
       createdAt: createdAt,
-      updatedAt: updatedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

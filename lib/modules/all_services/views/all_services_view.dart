@@ -13,8 +13,8 @@ class AllServicesView extends GetView<AllServicesController> {
         return Icons.library_books;
       case 'Dossiers Passeport/CNI':
         return Icons.badge;
-      case 'Dossiers certification IDE':
-        return Icons.verified;
+      case 'Certificat de police':
+        return Icons.shield;
       case 'Rapport de stage':
         return Icons.work;
       case 'Dossiers inscription et préinscription universitaire':
@@ -53,7 +53,7 @@ class AllServicesView extends GetView<AllServicesController> {
                 onTap: () => controller.onServiceTap(service),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(

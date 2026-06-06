@@ -53,7 +53,7 @@ class _OtpBoardState extends State<OtpBoard>
             height: MediaQuery.of(context).size.height * 0.65,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(50),
                   topRight: Radius.circular(50),

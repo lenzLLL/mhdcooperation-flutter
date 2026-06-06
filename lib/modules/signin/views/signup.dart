@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:mhdcooperation/core/values/app_colors.dart';
 import 'package:mhdcooperation/core/values/app_strings.dart';
 import 'package:mhdcooperation/routes/app_routes.dart';
+import 'package:mhdcooperation/data/services/auth_service.dart';
+import 'package:mhdcooperation/data/constants/villes_cameroun.dart';
 import 'package:phone_form_field/phone_form_field.dart';
 
 class SignupBoard extends StatefulWidget {
@@ -18,7 +20,9 @@ class _SignupBoardState extends State<SignupBoard>
   PhoneNumber? phoneNumber;
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController cityController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  String? selectedCity;
+  bool isPasswordObscured = true;
   late AnimationController _animationController;
 
   @override
@@ -35,7 +39,7 @@ class _SignupBoardState extends State<SignupBoard>
     _animationController.dispose();
     nameController.dispose();
     emailController.dispose();
-    cityController.dispose();
+    passwordController.dispose();
     super.dispose();
   }
 
@@ -59,7 +63,7 @@ class _SignupBoardState extends State<SignupBoard>
             height: MediaQuery.of(context).size.height * 0.85,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(50),
                   topRight: Radius.circular(50),
@@ -144,6 +148,7 @@ class _SignupBoardState extends State<SignupBoard>
                       child: Column(
                         children: [
                           PhoneFormField(
+                            initialValue: PhoneNumber.parse('+237'),
                             isCountrySelectionEnabled: true,
                             isCountryButtonPersistent: true,
                             countryButtonStyle: const CountryButtonStyle(
@@ -187,12 +192,13 @@ class _SignupBoardState extends State<SignupBoard>
                                 vertical: 16,
                               ),
                               filled: true,
-                              fillColor: Colors.grey[50],
+                              fillColor: Theme.of(context).colorScheme.surface,
                             ),
                           ),
                           SizedBox(height: 10),
                           TextFormField(
                             controller: nameController,
+                            onChanged: (_) => setState(() {}),
                             cursorColor: AppColors.primary,
                             textInputAction: TextInputAction.next,
                             style: TextStyle(fontWeight: FontWeight.normal),
@@ -258,6 +264,7 @@ class _SignupBoardState extends State<SignupBoard>
                           SizedBox(height: 10),
                           TextFormField(
                             controller: emailController,
+                            onChanged: (_) => setState(() {}),
                             cursorColor: AppColors.primary,
                             textInputAction: TextInputAction.next,
                             keyboardType: TextInputType.emailAddress,
@@ -323,10 +330,89 @@ class _SignupBoardState extends State<SignupBoard>
                           ),
                           SizedBox(height: 10),
                           TextFormField(
-                            controller: cityController,
+                            controller: passwordController,
+                            onChanged: (_) => setState(() {}),
                             cursorColor: AppColors.primary,
-                            textInputAction: TextInputAction.done,
+                            textInputAction: TextInputAction.next,
+                            obscureText: isPasswordObscured,
                             style: TextStyle(fontWeight: FontWeight.normal),
+                            decoration: InputDecoration(
+                              hintText: AppStrings.signupPasswordHint,
+                              hintStyle: TextStyle(color: Colors.grey[400]),
+                              prefixIcon: Icon(
+                                Icons.lock,
+                                color: Colors.grey[400],
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  isPasswordObscured
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: Colors.grey[400],
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    isPasswordObscured = !isPasswordObscured;
+                                  });
+                                },
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: const BorderSide(
+                                  color: AppColors.primary,
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderSide: const BorderSide(
+                                  color: Colors.red,
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
+                              ),
+                              disabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.grey[300]!,
+                                  width: 0.5,
+                                ),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.grey[300]!,
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
+                              ),
+                              border: OutlineInputBorder(
+                                borderSide: const BorderSide(
+                                  color: AppColors.primary,
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(20),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          SizedBox(height: 10),
+                          DropdownButtonFormField<String>(
+                            key: ValueKey(selectedCity),
+                            initialValue: selectedCity,
                             decoration: InputDecoration(
                               hintText: AppStrings.signupCityHint,
                               hintStyle: TextStyle(color: Colors.grey[400]),
@@ -385,6 +471,15 @@ class _SignupBoardState extends State<SignupBoard>
                                 ),
                               ),
                             ),
+                            items: (villesCameroun.toSet().toList()..sort()).map(
+                              (city) => DropdownMenuItem(value: city, child: Text(city)),
+                            ).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedCity = value;
+                              });
+                            },
+                            hint: Text(AppStrings.signupCityHint),
                           ),
                         ],
                       ),
@@ -398,11 +493,29 @@ class _SignupBoardState extends State<SignupBoard>
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: phoneNumber != null
-                              ? () {
-                                  Get.toNamed(AppRoutes.otp);
-
-                                  // TODO: Ajouter la logique de connexion
+                          onPressed:
+                              emailController.text.trim().isNotEmpty &&
+                                  passwordController.text.trim().isNotEmpty &&
+                                  nameController.text.trim().isNotEmpty
+                              ? () async {
+                                  final authService = Get.find<AuthService>();
+                                  try {
+                                    await authService.signUp(
+                                      email: emailController.text.trim(),
+                                      password: passwordController.text.trim(),
+                                      name: nameController.text.trim(),
+                                      phoneNumber: phoneNumber?.international,
+                                      city: selectedCity,
+                                    );
+                                    Get.offAllNamed(AppRoutes.home);
+                                  } catch (error) {
+                                    Get.snackbar(
+                                      'Erreur',
+                                      error.toString(),
+                                      snackPosition: SnackPosition.BOTTOM,
+                                      duration: const Duration(seconds: 3),
+                                    );
+                                  }
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(

@@ -17,6 +17,7 @@ class Concours {
   final String? docUrl;
   final int? ageLimit;
   final String? pdfUrl;
+  final String? ville;
 
   Concours({
     required this.id,
@@ -37,6 +38,7 @@ class Concours {
     this.docUrl,
     this.ageLimit,
     this.pdfUrl,
+    this.ville,
   });
 
   factory Concours.fromJson(Map<String, dynamic> json) {
@@ -73,6 +75,7 @@ class Concours {
           ? int.tryParse(json['age_limit'].toString())
           : null,
       pdfUrl: json['pdf_url'],
+      ville: json['ville'],
     );
   }
 
@@ -96,6 +99,7 @@ class Concours {
       'doc_url': docUrl,
       'age_limit': ageLimit,
       'pdf_url': pdfUrl,
+      'ville': ville,
     };
   }
 

@@ -59,6 +59,7 @@ class AppValues {
   static const String keyUserId = 'user_id';
   static const String keyCurrentChurch = 'current_church';
   static const String keyCurrentUser = 'current_user';
+  static const String keyDossiers = 'dossiers';
   static const String keyLanguage = 'language';
   static const String keyThemeMode = 'theme_mode';
   static const String keyCachePrefix = 'cache.';

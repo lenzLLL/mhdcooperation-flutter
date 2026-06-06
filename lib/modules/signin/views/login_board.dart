@@ -1,9 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mhdcooperation/core/values/app_colors.dart';
 import 'package:mhdcooperation/core/values/app_strings.dart';
+import 'package:mhdcooperation/data/services/auth_service.dart';
 import 'package:mhdcooperation/routes/app_routes.dart';
-import 'package:phone_form_field/phone_form_field.dart';
 
 class LoginBoard extends StatefulWidget {
   const LoginBoard({super.key});
@@ -15,7 +16,9 @@ class LoginBoard extends StatefulWidget {
 class _LoginBoardState extends State<LoginBoard>
     with SingleTickerProviderStateMixin {
   final formKey = GlobalKey<FormState>();
-  PhoneNumber? phoneNumber;
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  bool isPasswordObscured = true;
   late AnimationController _animationController;
 
   @override
@@ -30,7 +33,110 @@ class _LoginBoardState extends State<LoginBoard>
   @override
   void dispose() {
     _animationController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showForgotPasswordDialog() async {
+    final resetEmailController = TextEditingController(
+      text: emailController.text.trim(),
+    );
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: AppColors.brandGradient,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.lock_reset, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Mot de passe oublié',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Entrez votre adresse email. Nous vous enverrons un lien pour réinitialiser votre mot de passe.',
+              style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.5),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: resetEmailController,
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'votre@email.com',
+                prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Annuler', style: TextStyle(color: Colors.grey[600])),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = resetEmailController.text.trim();
+              if (email.isEmpty) return;
+              Navigator.of(ctx).pop();
+              try {
+                await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                Get.snackbar(
+                  'Email envoyé ✅',
+                  'Un lien de réinitialisation a été envoyé à $email',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.green[50],
+                  colorText: Colors.green[800],
+                  duration: const Duration(seconds: 5),
+                  icon: const Icon(Icons.check_circle, color: Colors.green),
+                );
+              } on FirebaseAuthException catch (e) {
+                final msg = e.code == 'user-not-found'
+                    ? 'Aucun compte associé à cet email.'
+                    : 'Erreur : ${e.message}';
+                Get.snackbar(
+                  'Erreur',
+                  msg,
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red[50],
+                  colorText: Colors.red[800],
+                  duration: const Duration(seconds: 4),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('Envoyer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    resetEmailController.dispose();
   }
 
   @override
@@ -53,7 +159,7 @@ class _LoginBoardState extends State<LoginBoard>
             height: MediaQuery.of(context).size.height * 0.65,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(50),
                   topRight: Radius.circular(50),
@@ -132,56 +238,136 @@ class _LoginBoardState extends State<LoginBoard>
                       ),
                     ),
                     SizedBox(height: 32),
-                    // Champ téléphone
+                    // Email et mot de passe
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: PhoneFormField(
-                        isCountrySelectionEnabled: true,
-                        isCountryButtonPersistent: true,
-                        countryButtonStyle: const CountryButtonStyle(
-                          showDialCode: true,
-                          showFlag: true,
-                        ),
-                        onChanged: (value) {
-                          setState(() {
-                            phoneNumber = value;
-                          });
-                        },
-                        decoration: InputDecoration(
-                          hintText: AppStrings.signinPhoneHint,
-                          hintStyle: TextStyle(color: Colors.grey[400]),
-                          prefixIcon: Icon(
-                            Icons.phone_outlined,
-                            color: AppColors.primary,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: Colors.grey[300]!,
-                              width: 1.5,
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: emailController,
+                            onChanged: (_) => setState(() {}),
+                            cursorColor: AppColors.primary,
+                            textInputAction: TextInputAction.next,
+                            keyboardType: TextInputType.emailAddress,
+                            style: TextStyle(fontWeight: FontWeight.normal),
+                            decoration: InputDecoration(
+                              hintText: AppStrings.signinEmailHint,
+                              hintStyle: TextStyle(color: Colors.grey[400]),
+                              prefixIcon: Icon(
+                                Icons.email,
+                                color: AppColors.primary,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: Colors.grey[300]!,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: Colors.grey[300]!,
+                                  width: 1.5,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: AppColors.primary,
+                                  width: 2,
+                                ),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                              filled: true,
+                              fillColor: Theme.of(context).colorScheme.surface,
                             ),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: AppColors.primary,
-                              width: 2,
+                          SizedBox(height: 10),
+                          TextFormField(
+                            controller: passwordController,
+                            onChanged: (_) => setState(() {}),
+                            cursorColor: AppColors.primary,
+                            textInputAction: TextInputAction.done,
+                            obscureText: isPasswordObscured,
+                            style: TextStyle(fontWeight: FontWeight.normal),
+                            decoration: InputDecoration(
+                              hintText: AppStrings.signinPasswordHint,
+                              hintStyle: TextStyle(color: Colors.grey[400]),
+                              prefixIcon: Icon(
+                                Icons.lock,
+                                color: AppColors.primary,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  isPasswordObscured
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: Colors.grey[400],
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    isPasswordObscured = !isPasswordObscured;
+                                  });
+                                },
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: Colors.grey[300]!,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: Colors.grey[300]!,
+                                  width: 1.5,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: AppColors.primary,
+                                  width: 2,
+                                ),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                              filled: true,
+                              fillColor: Theme.of(context).colorScheme.surface,
                             ),
                           ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
+                        ],
+                      ),
+                    ),
+                    // Lien mot de passe oublié
+                    Padding(
+                      padding: const EdgeInsets.only(right: 20, top: 4),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: _showForgotPasswordDialog,
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
+                          child: Text(
+                            'Mot de passe oublié ?',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.secondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                    SizedBox(height: 28),
+                    SizedBox(height: 16),
                     // Bouton d'authentification
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -189,11 +375,25 @@ class _LoginBoardState extends State<LoginBoard>
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: phoneNumber != null
-                              ? () {
-                                  Get.toNamed(AppRoutes.otp);
-
-                                  // TODO: Ajouter la logique de connexion
+                          onPressed:
+                              emailController.text.trim().isNotEmpty &&
+                                  passwordController.text.trim().isNotEmpty
+                              ? () async {
+                                  final authService = Get.find<AuthService>();
+                                  try {
+                                    await authService.signIn(
+                                      email: emailController.text.trim(),
+                                      password: passwordController.text.trim(),
+                                    );
+                                    Get.offAllNamed(AppRoutes.home);
+                                  } catch (error) {
+                                    Get.snackbar(
+                                      'Erreur',
+                                      error.toString(),
+                                      snackPosition: SnackPosition.BOTTOM,
+                                      duration: const Duration(seconds: 3),
+                                    );
+                                  }
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(

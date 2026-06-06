@@ -1,7 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mhdcooperation/data/models/services.dart';
+import 'package:mhdcooperation/data/services/session_service.dart';
+import 'package:mhdcooperation/routes/app_routes.dart';
+import 'school_level_selector.dart';
 
 class ServiceDetailView extends StatelessWidget {
   final Services service;
@@ -24,111 +26,174 @@ class ServiceDetailView extends StatelessWidget {
               icon: const Icon(Icons.arrow_back),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              title: const Text('Détails du Service'),
-              background: service.iconUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: service.iconUrl!,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: Colors.grey[300],
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image_not_supported),
-                      ),
-                    )
-                  : Container(
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.business_center),
+              title: Text(
+                service.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(0, 2),
+                      blurRadius: 6,
+                      color: Colors.black87,
                     ),
+                    Shadow(
+                      offset: Offset(0, 1),
+                      blurRadius: 3,
+                      color: Colors.black54,
+                    ),
+                  ],
+                ),
+              ),
+              background: Container(
+                color: Theme.of(context).primaryColor,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Theme.of(context).primaryColor.withAlpha(217),
+                        Theme.of(context).primaryColor.withAlpha(166),
+                        Theme.of(context).primaryColor.withAlpha(114),
+                        Theme.of(context).primaryColor.withAlpha(64),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
           // Content
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Service Icon
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withAlpha(25),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Icon(
+                        Icons.business_center,
+                        size: 64,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
                   // Title
                   Text(
                     service.name,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 32,
                       fontWeight: FontWeight.bold,
+                      height: 1.2,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
+
                   // Description
                   Text(
                     service.desc,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 18,
                       color: Colors.grey[600],
-                      height: 1.5,
+                      height: 1.6,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 24),
-                  // Features Section
-                  const Text(
-                    'Caractéristiques',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildFeatureItem('Accès 24/7', Icons.schedule),
-                  _buildFeatureItem('Support en français', Icons.language),
-                  _buildFeatureItem('Accès mobile', Icons.phone_android),
-                  const SizedBox(height: 24),
-                  // CTA Button
+                  const SizedBox(height: 48),
+
+                  // Main Action Button
                   SizedBox(
                     width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
+                    height: 64,
+                    child: ElevatedButton.icon(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Inscription à ${service.name}'),
-                          ),
-                        );
+                        _navigateToPayment(context);
                       },
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      icon: const Icon(Icons.call, size: 28),
+                      label: const Text(
+                        'Faire appel au service',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      child: const Text('S\'inscrire maintenant'),
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 4,
+                        shadowColor: Theme.of(
+                          context,
+                        ).primaryColor.withAlpha(77),
+                      ),
                     ),
                   ),
+
+                  // Bottom spacing
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Implement open dossier functionality
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Ouverture du dossier...')),
-          );
-        },
-        icon: const Icon(Icons.folder_open),
-        label: const Text('Ouvrir mon dossier'),
-      ),
     );
   }
 
-  Widget _buildFeatureItem(String label, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20),
-          const SizedBox(width: 12),
-          Text(label),
-        ],
-      ),
+  void _navigateToPayment(BuildContext context) {
+    final sessionService = Get.find<SessionService>();
+    final currentUser = sessionService.currentUser.value;
+
+    if (currentUser == null || !sessionService.isAuthenticated.value) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veuillez vous connecter pour continuer.'),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Service BTS/Licence/Bachelor/Master/HND → sélection école + niveau
+    if (service.id == '2') {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (_) => SchoolLevelSelector(
+          serviceId: service.id,
+          serviceName: service.name,
+        ),
+      );
+      return;
+    }
+
+    Get.toNamed(
+      AppRoutes.payment,
+      arguments: {
+        'type': 'service',
+        'itemId': service.id,
+        'itemTitle': service.name,
+        'amount': 15000.0,
+        'serviceId': service.id,
+      },
     );
   }
 }

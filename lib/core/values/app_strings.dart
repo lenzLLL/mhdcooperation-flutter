@@ -35,18 +35,20 @@ class AppStrings {
 
   // Sign In/Sign Up
   static const String signinTitle = 'Connexion';
-  static const String signinSubtitle = 'Entrez votre numéro de téléphone';
-  static const String signinPhoneHint = 'Entrez votre numéro';
+  static const String signinSubtitle = 'Entrez votre email et mot de passe';
+  static const String signinEmailHint = 'Adresse email';
+  static const String signinPasswordHint = 'Mot de passe';
   static const String signinContinue = 'Continuer';
   static const String signinNoAccount = 'Vous n\'avez pas de compte?';
   static const String signinCreateAccount = 'Créer un compte';
 
   static const String signupTitle = 'S\'enregistrer';
   static const String signupSubtitle =
-      'Renseignez les différents champs pour créer votre compte';
+      'Renseignez votre email, mot de passe, puis votre nom, téléphone et ville';
   static const String signupNameHint = 'Nom complet';
   static const String signupEmailHint = 'Adresse email';
-  static const String signupCityHint = 'Ville';
+  static const String signupPasswordHint = 'Mot de passe';
+  static const String signupCityHint = 'Choisissez votre ville';
   static const String signupPhoneHint = 'Numéro de téléphone';
   static const String signupContinue = 'Continuer';
   static const String signupHaveAccount = 'Avez-vous déjà un compte?';

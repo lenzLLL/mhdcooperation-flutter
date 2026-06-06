@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/core/values/app_colors.dart';
 import 'package:mhdcooperation/modules/all_services/views/all_services_view.dart';
 import 'package:mhdcooperation/modules/home/controllers/home_controller.dart';
 import 'package:mhdcooperation/modules/main_layout/controllers/main_layout_controller.dart';
@@ -17,6 +18,38 @@ class HomePage extends GetView<HomeController> {
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
+        }
+
+        if (controller.hasError.value) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    controller.errorMessage.value,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: controller.loadData,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Réessayer'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
         return RefreshIndicator(
@@ -144,6 +177,50 @@ class HomePage extends GetView<HomeController> {
     );
   }
 
+  Widget _buildSectionHeader(
+    String title,
+    String seeAllLabel,
+    VoidCallback onSeeAll,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 22,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [AppColors.primary, AppColors.secondary],
+              ),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: onSeeAll,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.secondary,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            child: Text(seeAllLabel),
+          ),
+        ],
+      ),
+    );
+  }
+
   IconData _getServiceIcon(String name) {
     switch (name) {
       case 'Dossiers Concours et Recrutements':
@@ -167,23 +244,10 @@ class HomePage extends GetView<HomeController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Nos Services',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              TextButton(
-                onPressed: () {
-                  Get.to(() => const AllServicesView());
-                },
-                child: const Text('Voir tout'),
-              ),
-            ],
-          ),
+        _buildSectionHeader(
+          'Nos Services',
+          'Voir tout',
+          () => Get.to(() => const AllServicesView()),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -205,15 +269,24 @@ class HomePage extends GetView<HomeController> {
                         width: 70,
                         height: 70,
                         decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).primaryColor.withAlpha(25), // 0.1 * 255
-                          borderRadius: BorderRadius.circular(12),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppColors.primary, AppColors.secondary],
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withAlpha(80),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Icon(
                           _getServiceIcon(service.name),
-                          color: Theme.of(context).primaryColor,
-                          size: 30,
+                          color: Colors.white,
+                          size: 28,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -270,60 +343,91 @@ class HomePage extends GetView<HomeController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Concours à venir',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              TextButton(
-                onPressed: () {
-                  final mainLayoutController = Get.find<MainLayoutController>();
-                  mainLayoutController.changePage(1);
-                },
-                child: const Text('Voir tout'),
-              ),
-            ],
-          ),
+        _buildSectionHeader(
+          'Concours à venir',
+          'Voir tout',
+          () => Get.find<MainLayoutController>().changePage(1),
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 270,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: controller.concours.length,
-            itemBuilder: (context, index) {
-              final concours = controller.concours[index];
-              return GestureDetector(
-                onTap: () => controller.onConcoursTap(concours),
-                child: Container(
-                  width: 200,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withAlpha(25), // 0.1 * 255
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12),
+        if (controller.concours.isEmpty)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(Get.context!).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withAlpha(25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Aucun concours à venir pour le moment.',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Consultez les concours disponibles ou revenez plus tard pour voir les nouvelles sessions.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    final mainLayoutController =
+                        Get.find<MainLayoutController>();
+                    mainLayoutController.changePage(1);
+                  },
+                  child: const Text('Voir tous les concours'),
+                ),
+              ],
+            ),
+          )
+        else
+          SizedBox(
+            height: 270,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: controller.concours.length,
+              itemBuilder: (context, index) {
+                final concours = controller.concours[index];
+                return GestureDetector(
+                  onTap: () => controller.onConcoursTap(concours),
+                  child: Container(
+                    width: 200,
+                    margin: const EdgeInsets.only(right: 12),
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withAlpha(20),
+                          spreadRadius: 0,
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
-                        child: concours.photoUrl != null
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 4,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [AppColors.primary, AppColors.secondary],
+                            ),
+                          ),
+                        ),
+                        concours.photoUrl != null
                             ? CachedNetworkImage(
                                 imageUrl: concours.photoUrl!,
                                 height: 120,
@@ -340,7 +444,7 @@ class HomePage extends GetView<HomeController> {
                                   height: 120,
                                   color: Colors.grey[300],
                                   child: Image.asset(
-                                    "assets/images/c.jpg",
+                                    'assets/images/c.jpg',
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -354,65 +458,64 @@ class HomePage extends GetView<HomeController> {
                                   size: 40,
                                 ),
                               ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              concours.title,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                concours.title,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              concours.schoolName ?? 'École',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
+                              const SizedBox(height: 4),
+                              Text(
+                                concours.schoolName ?? 'École',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Date du concours: ${_formatDate(concours.startDate)}',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: Colors.black87,
+                              const SizedBox(height: 4),
+                              Text(
+                                'Date du concours: ${_formatDate(concours.startDate)}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Frais de dossiers: ${concours.applicationFees ?? 0} FCFA',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: Colors.black87,
+                              const SizedBox(height: 2),
+                              Text(
+                                'Frais de dossiers: ${concours.applicationFees ?? 0} FCFA',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Date limite: ${_formatRemainingTime(concours.applicationDeadline ?? DateTime.now())}',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: Colors.red,
+                              const SizedBox(height: 2),
+                              Text(
+                                'Date limite: ${_formatRemainingTime(concours.applicationDeadline ?? DateTime.now())}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.red,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
       ],
     );
   }
@@ -421,24 +524,10 @@ class HomePage extends GetView<HomeController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Écoles Partenaires',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              TextButton(
-                onPressed: () {
-                  final mainLayoutController = Get.find<MainLayoutController>();
-                  mainLayoutController.changePage(2); // Index pour Écoles
-                },
-                child: const Text('Voir tout'),
-              ),
-            ],
-          ),
+        _buildSectionHeader(
+          'Écoles Partenaires',
+          'Voir tout',
+          () => Get.find<MainLayoutController>().changePage(2),
         ),
         const SizedBox(height: 12),
         ListView.builder(
@@ -454,14 +543,20 @@ class HomePage extends GetView<HomeController> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border(
+                    left: BorderSide(
+                      color: AppColors.primary.withAlpha(200),
+                      width: 4,
+                    ),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withAlpha(25), // 0.1 * 255
-                      spreadRadius: 1,
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
+                      color: AppColors.primary.withAlpha(18),
+                      spreadRadius: 0,
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),

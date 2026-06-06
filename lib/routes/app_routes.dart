@@ -12,5 +12,14 @@ class AppRoutes {
   static const String allConcours = "/all-concours";
   static const String serviceDetail = "/service-details";
   static const String concoursDetail = "/concours-details";
+  static const String payment = "/payment";
+  static const String userDossiers = "/user-dossiers";
   static const String schoolDetail = "/school-details";
+  static const String help = "/help";
+  static const String about = "/about";
+  static const String privacy = "/privacy";
+  static const String terms = "/terms";
+  static const String editProfile = "/edit-profile";
+  static const String notifications = '/notifications';
+  static const String dossierDetail = '/dossier-detail';
 }

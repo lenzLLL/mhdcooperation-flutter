@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/values/app_colors.dart';
 import '../../../core/values/app_strings.dart';
 import '../../../data/services/storage_service.dart';
 import '../../../routes/app_routes.dart';
@@ -15,21 +16,13 @@ class OnboardingController extends GetxController {
       title: AppStrings.onboardingTitle1,
       description: AppStrings.onboardingDesc1,
       icon: Icons.assignment_turned_in_rounded,
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF6366F1), Color(0xFF818CF8)],
-      ),
+      gradient: AppColors.brandGradient,
     ),
     OnboardingPage(
       title: AppStrings.onboardingTitle2,
       description: AppStrings.onboardingDesc2,
       icon: Icons.speed_rounded,
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
-      ),
+      gradient: AppColors.primaryGradient,
     ),
     OnboardingPage(
       title: AppStrings.onboardingTitle3,
@@ -45,11 +38,7 @@ class OnboardingController extends GetxController {
       title: AppStrings.onboardingTitle4,
       description: AppStrings.onboardingDesc4,
       icon: Icons.celebration_rounded,
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF10B981), Color(0xFF34D399)],
-      ),
+      gradient: AppColors.secondaryGradient,
     ),
   ];
 

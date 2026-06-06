@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A3A6E"/>
+      <stop offset="100%" stop-color="#3BA8D5"/>
+    </linearGradient>
+    <linearGradient id="glassGrad" x1="100%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#1A3A6E"/>
+      <stop offset="100%" stop-color="#2864BC"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fond dégradé avec coins arrondis -->
+  <rect width="1024" height="1024" rx="210" fill="url(#bg)"/>
+
+  <!-- Groupe centré -->
+  <g transform="translate(510, 510)">
+
+    <!-- Pages derrière le sac (blanc, opacités décroissantes vers l'arrière) -->
+    <rect x="-240" y="-220" width="320" height="410" rx="22"
+          fill="white" fill-opacity="0.18"
+          transform="rotate(-32)"/>
+    <rect x="-240" y="-220" width="320" height="410" rx="22"
+          fill="white" fill-opacity="0.35"
+          transform="rotate(-22)"/>
+    <rect x="-240" y="-220" width="320" height="410" rx="22"
+          fill="white" fill-opacity="0.58"
+          transform="rotate(-12)"/>
+    <rect x="-240" y="-220" width="320" height="410" rx="22"
+          fill="white" fill-opacity="0.80"
+          transform="rotate(-3)"/>
+
+    <!-- Poignée du sac -->
+    <path d="M -72,-196 C -72,-262 72,-262 72,-196"
+          stroke="white" stroke-width="34"
+          fill="none" stroke-linecap="round"/>
+
+    <!-- Corps du sac (blanc) -->
+    <rect x="-245" y="-188" width="490" height="408" rx="40" fill="white"/>
+
+    <!-- Ligne de fermeture horizontale -->
+    <rect x="-245" y="-44" width="490" height="10" rx="5" fill="#D4E8F5" opacity="0.6"/>
+
+    <!-- Loupe : fenêtre circulaire (fond dégradé visible à travers) -->
+    <circle cx="8" cy="32" r="128" fill="url(#glassGrad)"/>
+
+    <!-- Personnage à l'intérieur de la loupe (blanc) -->
+    <!-- Tête -->
+    <circle cx="8" cy="-6" r="42" fill="white"/>
+    <!-- Corps / épaules -->
+    <path d="M -58,92 Q -62,36 8,33 Q 78,36 74,92 Z" fill="white"/>
+    <!-- Cravate -->
+    <polygon points="8,33 1,60 8,54 15,60" fill="url(#glassGrad)" opacity="0.9"/>
+
+    <!-- Bord de la loupe (blanc, par-dessus la fenêtre) -->
+    <circle cx="8" cy="32" r="128" fill="none" stroke="white" stroke-width="26"/>
+
+    <!-- Manche de la loupe (bleu pour être visible sur le sac blanc) -->
+    <line x1="98" y1="122" x2="174" y2="198"
+          stroke="#2864BC" stroke-width="34" stroke-linecap="round"/>
+
+  </g>
+</svg>

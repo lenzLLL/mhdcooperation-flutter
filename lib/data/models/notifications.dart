@@ -48,4 +48,17 @@ class NotificationModel {
       meta: meta,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'message': message,
+      'type': type,
+      'is_read': isRead,
+      'sent': sent,
+      'created_at': createdAt.toIso8601String(),
+      'meta': meta,
+    };
+  }
 }

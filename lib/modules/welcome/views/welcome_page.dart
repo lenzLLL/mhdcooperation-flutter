@@ -64,44 +64,28 @@ class WelcomePage extends GetView<WelcomeController> {
   Widget _buildHeader(ThemeController themeController) {
     return Column(
       children: [
-        // Logo
+        // Logo image
         Container(
-          width: 120,
-          height: 120,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                themeController.primaryColor.value,
-                themeController.primaryColor.value.withValues(alpha: 0.7),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: themeController.primaryColor.value.withValues(
-                  alpha: 0.3,
-                ),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            color: themeController.primaryColor.value.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(24),
           ),
-          child: const Icon(
-            Icons.assignment_turned_in_rounded,
-            size: 60,
-            color: Colors.white,
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: 220,
+            height: 90,
+            fit: BoxFit.contain,
           ),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
 
         // Title
         Text(
           AppStrings.welcomeTitle,
           style: GoogleFonts.inter(
-            fontSize: 32,
+            fontSize: 30,
             fontWeight: FontWeight.bold,
             color: themeController.textPrimaryColor,
           ),
@@ -114,7 +98,7 @@ class WelcomePage extends GetView<WelcomeController> {
         Text(
           AppStrings.welcomeSubtitle,
           style: GoogleFonts.inter(
-            fontSize: 18,
+            fontSize: 17,
             color: themeController.textSecondaryColor,
             fontWeight: FontWeight.w500,
           ),

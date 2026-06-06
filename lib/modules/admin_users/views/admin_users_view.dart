@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/data/services/session_service.dart';
 import '../controllers/admin_users_controller.dart';
+import 'admin_user_detail_view.dart';
 
 class AdminUsersView extends GetView<AdminUsersController> {
   const AdminUsersView({super.key});
+
+  bool get _isSadmin {
+    final role = Get.find<SessionService>().currentUser.value?.role.toUpperCase();
+    return role == 'SADMIN';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,95 +30,131 @@ class AdminUsersView extends GetView<AdminUsersController> {
       body: Column(
         children: [
           // Statistiques rapides
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatCard(
-                  'Total',
-                  controller.users.length.toString(),
-                  Colors.blue,
-                ),
-                _buildStatCard(
-                  'Actifs',
-                  controller.getActiveUsersCount().toString(),
-                  Colors.green,
-                ),
-                _buildStatCard(
-                  'Inactifs',
-                  controller.getInactiveUsersCount().toString(),
-                  Colors.red,
-                ),
-                _buildStatCard(
-                  'Admins',
-                  controller.getAdminUsersCount().toString(),
-                  Colors.orange,
-                ),
-              ],
+          Obx(
+            () => Container(
+              padding: const EdgeInsets.all(16),
+              color: Theme.of(context).colorScheme.surface,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatCard(
+                    'Total',
+                    controller.totalUsersCount.toString(),
+                    Colors.blue,
+                  ),
+                  _buildStatCard(
+                    'Actifs',
+                    controller.activeUsersCount.toString(),
+                    Colors.green,
+                  ),
+                  _buildStatCard(
+                    'Inactifs',
+                    controller.inactiveUsersCount.toString(),
+                    Colors.red,
+                  ),
+                  _buildStatCard(
+                    'Admins',
+                    controller.adminUsersCount.toString(),
+                    Colors.orange,
+                  ),
+                ],
+              ),
             ),
           ),
 
           // Filtres
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey[50],
-            child: Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: controller.selectedStatus.value,
+          Obx(() {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              color: Theme.of(context).scaffoldBackgroundColor,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: controller.selectedFilter.value,
+                          decoration: const InputDecoration(
+                            labelText: 'Filtrer par',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('Tous')),
+                            DropdownMenuItem(
+                              value: 'active',
+                              child: Text('Actifs'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'inactive',
+                              child: Text('Inactifs'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'recent',
+                              child: Text('Récents'),
+                            ),
+                          ],
+                          onChanged: (value) => controller.filterUsers(value!),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: controller.selectedRole.value,
+                          decoration: const InputDecoration(
+                            labelText: 'Rôle',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('Tous')),
+                            DropdownMenuItem(
+                              value: 'user',
+                              child: Text('Utilisateurs'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'admin',
+                              child: Text('Admins'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'sadmin',
+                              child: Text('Super Admins'),
+                            ),
+                          ],
+                          onChanged: (value) => controller.filterByRole(value!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: controller.selectedCity.value,
                     decoration: const InputDecoration(
-                      labelText: 'Filtrer par',
+                      labelText: 'Ville',
                       border: OutlineInputBorder(),
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 8,
                       ),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'all', child: Text('Tous')),
-                      DropdownMenuItem(value: 'active', child: Text('Actifs')),
-                      DropdownMenuItem(
-                        value: 'inactive',
-                        child: Text('Inactifs'),
-                      ),
-                      DropdownMenuItem(value: 'recent', child: Text('Récents')),
-                    ],
-                    onChanged: (value) => controller.filterUsers(value!),
+                    items: controller.getAllCities().map((city) {
+                      return DropdownMenuItem(
+                        value: city,
+                        child: Text(city == 'all' ? 'Toutes les villes' : city),
+                      );
+                    }).toList(),
+                    onChanged: (value) => controller.filterByCity(value!),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: controller.selectedRole.value,
-                    decoration: const InputDecoration(
-                      labelText: 'Rôle',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'all', child: Text('Tous')),
-                      DropdownMenuItem(
-                        value: 'user',
-                        child: Text('Utilisateurs'),
-                      ),
-                      DropdownMenuItem(value: 'admin', child: Text('Admins')),
-                      DropdownMenuItem(
-                        value: 'superadmin',
-                        child: Text('Super Admins'),
-                      ),
-                    ],
-                    onChanged: (value) => controller.filterByRole(value!),
-                  ),
-                ),
-              ],
-            ),
-          ),
+                ],
+              ),
+            );
+          }),
 
           // Liste des utilisateurs
           Expanded(
@@ -148,8 +191,8 @@ class AdminUsersView extends GetView<AdminUsersController> {
                                   user['role'] == 'user'
                                       ? Icons.person
                                       : user['role'] == 'admin'
-                                          ? Icons.admin_panel_settings
-                                          : Icons.security,
+                                      ? Icons.admin_panel_settings
+                                      : Icons.security,
                                   color: controller.getRoleColor(user['role']),
                                 ),
                               ),
@@ -243,7 +286,7 @@ class AdminUsersView extends GetView<AdminUsersController> {
                                   ],
                                 ),
                               ),
-                              if (user['role'] == 'user') ...[
+                              if (user['role'] == 'user' && _isSadmin) ...[
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -277,7 +320,9 @@ class AdminUsersView extends GetView<AdminUsersController> {
                               Expanded(
                                 child: OutlinedButton(
                                   onPressed: () {
-                                    // TODO: Voir les détails de l'utilisateur
+                                    Get.to(
+                                      () => AdminUserDetailView(user: user),
+                                    );
                                   },
                                   child: const Text('Voir détails'),
                                 ),
@@ -301,7 +346,8 @@ class AdminUsersView extends GetView<AdminUsersController> {
                               ),
                             ],
                           ),
-                          if (user['role'] != 'super_admin') ...[
+                          if (user['role'] != 'super_admin' &&
+                              user['role'] != 'sadmin') ...[
                             const SizedBox(height: 8),
                             Row(
                               children: [
@@ -317,15 +363,21 @@ class AdminUsersView extends GetView<AdminUsersController> {
                                   child: DropdownButton<String>(
                                     value: user['role'],
                                     isExpanded: true,
-                                    items: const [
-                                      DropdownMenuItem(
+                                    items: [
+                                      const DropdownMenuItem(
                                         value: 'user',
                                         child: Text('Utilisateur'),
                                       ),
-                                      DropdownMenuItem(
+                                      const DropdownMenuItem(
                                         value: 'admin',
                                         child: Text('Admin'),
                                       ),
+                                      // Seul un SADMIN peut promouvoir en SADMIN
+                                      if (_isSadmin)
+                                        const DropdownMenuItem(
+                                          value: 'sadmin',
+                                          child: Text('Super Admin'),
+                                        ),
                                     ],
                                     onChanged: (value) {
                                       if (value != null) {
