@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../core/values/app_value.dart';
@@ -38,6 +40,36 @@ class DossierService extends GetxService {
     }
 
     return [];
+  }
+
+  static const int pageSize = 15;
+
+  Future<({List<DossierModel> items, QueryDocumentSnapshot<Map<String, dynamic>>? lastDoc})> loadDossiersPage(
+    String userId, {
+    QueryDocumentSnapshot<Map<String, dynamic>>? startAfter,
+  }) async {
+    try {
+      Query<Map<String, dynamic>> query = _dossierCollection
+          .where('user_id', isEqualTo: userId)
+          .orderBy('created_at', descending: true)
+          .limit(pageSize);
+      if (startAfter != null) query = query.startAfterDocument(startAfter);
+      final snapshot = await query.get();
+      final items = snapshot.docs
+          .map((doc) => DossierModel.fromJson({'id': doc.id, ...doc.data()}))
+          .toList();
+      return (items: items, lastDoc: snapshot.docs.isNotEmpty ? snapshot.docs.last : null);
+    } on FirebaseException catch (_) {
+      Query<Map<String, dynamic>> query = _dossierCollection
+          .where('user_id', isEqualTo: userId)
+          .limit(pageSize);
+      final snapshot = await query.get();
+      final items = snapshot.docs
+          .map((doc) => DossierModel.fromJson({'id': doc.id, ...doc.data()}))
+          .toList();
+      items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return (items: items, lastDoc: snapshot.docs.isNotEmpty ? snapshot.docs.last : null);
+    }
   }
 
   Future<List<DossierModel>> loadDossiersForUser(String userId) async {
@@ -99,6 +131,9 @@ class DossierService extends GetxService {
     String status = 'en_cours',
     String? messages,
     String? links,
+    String? ville,
+    String? quartier,
+    List<String>? requiredDocuments,
   }) async {
     final now = DateTime.now();
     final docRef = _dossierCollection.doc();
@@ -118,6 +153,9 @@ class DossierService extends GetxService {
       status: status,
       messages: messages,
       links: links,
+      ville: ville,
+      quartier: quartier,
+      requiredDocuments: requiredDocuments,
       createdAt: now,
       updatedAt: now,
     );
@@ -126,28 +164,15 @@ class DossierService extends GetxService {
     data['date_de_depot'] = Timestamp.fromDate(now);
     data['created_at'] = FieldValue.serverTimestamp();
     data['updated_at'] = FieldValue.serverTimestamp();
+    // Initialize per-document tracking from required docs list
+    if (requiredDocuments != null && requiredDocuments.isNotEmpty) {
+      data['documents_tracking'] = requiredDocuments
+          .map((name) => DossierDocument(name: name).toJson())
+          .toList();
+    }
 
     await docRef.set(data);
     await addDossier(dossier);
-
-    final transactionData = <String, dynamic>{
-      'user_id': userId,
-      'type':
-          itemType?.toLowerCase() == 'concours' ||
-              itemType?.toLowerCase() == 'concour'
-          ? 'concours'
-          : 'service',
-      'amount': amount,
-      'status': 'completed',
-      'created_at': FieldValue.serverTimestamp(),
-      'gateway': gateway,
-      'payment_phone': userPhone,
-      'libelle': itemTitle ?? '',
-      'service_id': serviceId,
-      'concours_id': concoursId,
-      'dossier_id': docRef.id,
-    };
-    await _firestore.collection('transactions').add(transactionData);
 
     if (Get.isRegistered<NotificationService>()) {
       final notificationService = Get.find<NotificationService>();
@@ -163,5 +188,103 @@ class DossierService extends GetxService {
     }
 
     return dossier;
+  }
+
+  // ─── Per-document tracking ────────────────────────────────────────────────
+
+  Future<List<DossierDocument>> _fetchDocumentsTracking(String dossierId) async {
+    final snap = await _dossierCollection.doc(dossierId).get();
+    final raw = snap.data()?['documents_tracking'] as List<dynamic>? ?? [];
+    return raw
+        .map((e) => DossierDocument.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  Future<void> _saveDocumentsTracking(
+      String dossierId, List<DossierDocument> docs) async {
+    await _dossierCollection.doc(dossierId).update({
+      'documents_tracking': docs.map((d) => d.toJson()).toList(),
+      'updated_at': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// User uploads a file for one required document.
+  Future<String> uploadDocumentFile(
+      String dossierId, String docName, File file) async {
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last.split('\\').last}';
+    final ref = FirebaseStorage.instance
+        .ref('dossiers/$dossierId/docs/$fileName');
+    await ref.putFile(file);
+    final url = await ref.getDownloadURL();
+
+    final docs = await _fetchDocumentsTracking(dossierId);
+    final idx = docs.indexWhere((d) => d.name == docName);
+    if (idx >= 0) {
+      docs[idx] = docs[idx].copyWith(
+        status: 'uploaded',
+        fileUrl: url,
+        uploadedAt: DateTime.now(),
+        rejectionReason: null,
+      );
+    } else {
+      docs.add(DossierDocument(
+        name: docName,
+        status: 'uploaded',
+        fileUrl: url,
+        uploadedAt: DateTime.now(),
+      ));
+    }
+    await _saveDocumentsTracking(dossierId, docs);
+    return url;
+  }
+
+  /// Admin validates one document.
+  Future<void> validateDocument(String dossierId, String docName) async {
+    final docs = await _fetchDocumentsTracking(dossierId);
+    final idx = docs.indexWhere((d) => d.name == docName);
+    if (idx >= 0) {
+      docs[idx] = docs[idx].copyWith(
+        status: 'validated',
+        reviewedAt: DateTime.now(),
+        rejectionReason: null,
+      );
+    }
+    await _saveDocumentsTracking(dossierId, docs);
+    _autoUpdateDossierStatus(dossierId, docs);
+  }
+
+  /// Admin rejects one document with a reason.
+  Future<void> rejectDocument(
+      String dossierId, String docName, String reason) async {
+    final docs = await _fetchDocumentsTracking(dossierId);
+    final idx = docs.indexWhere((d) => d.name == docName);
+    if (idx >= 0) {
+      docs[idx] = docs[idx].copyWith(
+        status: 'rejected',
+        rejectionReason: reason,
+        reviewedAt: DateTime.now(),
+      );
+    }
+    await _saveDocumentsTracking(dossierId, docs);
+    _autoUpdateDossierStatus(dossierId, docs);
+  }
+
+  /// Auto-compute global dossier status from document statuses.
+  void _autoUpdateDossierStatus(
+      String dossierId, List<DossierDocument> docs) {
+    if (docs.isEmpty) return;
+    String newStatus;
+    if (docs.every((d) => d.status == 'validated')) {
+      newStatus = 'valide';
+    } else if (docs.any((d) => d.status == 'rejected')) {
+      newStatus = 'incomplet';
+    } else {
+      newStatus = 'en_cours';
+    }
+    _dossierCollection.doc(dossierId).update({
+      'status': newStatus,
+      'updated_at': FieldValue.serverTimestamp(),
+    });
   }
 }
