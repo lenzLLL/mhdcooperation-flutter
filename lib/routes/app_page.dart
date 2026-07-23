@@ -40,9 +40,10 @@ import 'package:mhdcooperation/data/models/services.dart';
 import 'package:mhdcooperation/data/models/concours.dart';
 import 'package:mhdcooperation/modules/edit_profile/bindings/edit_profile_binding.dart';
 import 'package:mhdcooperation/modules/edit_profile/views/edit_profile_view.dart';
+import 'package:mhdcooperation/modules/document_upload/views/document_upload_view.dart';
 
 class AppPages {
-  static const initial = AppRoutes.onboarding;
+  static const initial = AppRoutes.initial;
   static final routes = [
     // Splash
     GetPage(
@@ -119,6 +120,29 @@ class AppPages {
               : double.tryParse(args?['amount']?.toString() ?? '') ?? 0.0,
           serviceId: args?['serviceId'] as String?,
           concoursId: args?['concoursId'] as String?,
+          ville: args?['ville'] as String?,
+          quartier: args?['quartier'] as String?,
+          requiredDocuments: (args?['requiredDocuments'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              const [],
+          selection: args?['selection'] as Map<String, dynamic>?,
+        );
+      },
+    ),
+    GetPage(
+      name: AppRoutes.documentUpload,
+      page: () {
+        final args = Get.arguments as Map<String, dynamic>?;
+        return DocumentUploadView(
+          dossierId: args?['dossierId'] as String? ?? '',
+          serviceId: args?['serviceId'] as String?,
+          concoursId: args?['concoursId'] as String?,
+          itemTitle: args?['itemTitle'] as String? ?? '',
+          requiredDocuments: (args?['requiredDocuments'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              const [],
         );
       },
     ),

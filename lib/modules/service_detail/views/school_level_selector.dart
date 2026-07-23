@@ -57,6 +57,7 @@ class _SchoolLevelSelectorState extends State<SchoolLevelSelector> {
 
   void _confirm() {
     Navigator.pop(context);
+    final docs = _selectedSchool!.docsParNiveau[_selectedNiveau!] ?? [];
     Get.toNamed(
       AppRoutes.payment,
       arguments: {
@@ -66,6 +67,8 @@ class _SchoolLevelSelectorState extends State<SchoolLevelSelector> {
             '${widget.serviceName} — ${_selectedNiveau!} (${_selectedSchool!.name})',
         'amount': _prix,
         'serviceId': widget.serviceId,
+        'selection': {'kind': 'bts', 'schoolId': _selectedSchool!.id, 'niveau': _selectedNiveau!},
+        if (docs.isNotEmpty) 'requiredDocuments': docs,
       },
     );
   }

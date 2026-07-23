@@ -15,6 +15,11 @@ class PaymentView extends StatefulWidget {
   final String? ville;
   final String? quartier;
   final List<String> requiredDocuments;
+  // Ce que le serveur doit recevoir pour recalculer le MÊME prix que celui
+  // affiché ici (voir ServiceSelection côté web) — sans ça, le serveur
+  // retombe sur son prix de base par défaut, indépendant de ce qui a été
+  // choisi. `amount` ci-dessus ne sert qu'à l'affichage.
+  final Map<String, dynamic>? selection;
 
   const PaymentView({
     super.key,
@@ -27,6 +32,7 @@ class PaymentView extends StatefulWidget {
     this.ville,
     this.quartier,
     this.requiredDocuments = const [],
+    this.selection,
   });
 
   @override
@@ -109,6 +115,7 @@ class _PaymentViewState extends State<PaymentView> {
           'itemType': widget.type,
           if (widget.concoursId != null) 'concoursId': widget.concoursId,
           if (widget.serviceId != null) 'serviceId': widget.serviceId,
+          if (widget.selection != null) 'selection': widget.selection,
           'ville': widget.ville,
           'quartier': widget.quartier,
         });
