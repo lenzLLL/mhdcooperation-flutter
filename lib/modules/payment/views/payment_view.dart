@@ -37,6 +37,10 @@ class _PaymentViewState extends State<PaymentView> {
   final TextEditingController _phoneController = TextEditingController();
   String? _selectedOperator;
   bool _isLoading = false;
+  // Le dossier créé au premier essai est conservé : si le paiement échoue
+  // (mauvais numéro, solde insuffisant) et que l'utilisateur retente, on ne
+  // recrée pas un second dossier pour le même achat.
+  String? _dossierId;
 
   void _autoDetectOperator(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
@@ -74,6 +78,15 @@ class _PaymentViewState extends State<PaymentView> {
     }
 
     final phone = _phoneController.text.trim();
+    // Vérification locale sommaire avant tout appel réseau ; le serveur reste
+    // l'autorité (validateCameroonPhone), qui accepte une fourchette large
+    // plutôt qu'un format strict pour ne jamais bloquer à tort un vrai client.
+    if (widget.amount > 0 && phone.replaceAll(RegExp(r'\D'), '').length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez saisir un numéro de téléphone valide.')),
+      );
+      return;
+    }
     if (widget.amount > 0 && _selectedOperator == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez sélectionner un opérateur mobile.')),
@@ -85,15 +98,23 @@ class _PaymentViewState extends State<PaymentView> {
     final api = ApiClient();
     try {
       // Le serveur recalcule le montant depuis le catalogue : on n'envoie que
-      // la sélection, jamais un prix.
-      final dossier = await api.post('/api/dossiers', {
-        'itemType': widget.type,
-        if (widget.concoursId != null) 'concoursId': widget.concoursId,
-        if (widget.serviceId != null) 'serviceId': widget.serviceId,
-        'ville': widget.ville,
-        'quartier': widget.quartier,
-      });
-      final dossierId = dossier['dossier']['id'] as String;
+      // la sélection, jamais un prix. Si un essai précédent a déjà créé le
+      // dossier (le paiement seul a échoué), on le réutilise au lieu d'en
+      // créer un second pour le même achat.
+      String dossierId;
+      if (_dossierId != null) {
+        dossierId = _dossierId!;
+      } else {
+        final dossier = await api.post('/api/dossiers', {
+          'itemType': widget.type,
+          if (widget.concoursId != null) 'concoursId': widget.concoursId,
+          if (widget.serviceId != null) 'serviceId': widget.serviceId,
+          'ville': widget.ville,
+          'quartier': widget.quartier,
+        });
+        dossierId = dossier['dossier']['id'] as String;
+      }
+      _dossierId = dossierId;
 
       if (widget.amount > 0) {
         final operator = _selectedOperator == 'MTN' ? 'MTN_MOMO_CMR' : 'ORANGE_CMR';
