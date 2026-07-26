@@ -22,4 +22,5 @@ class AppRoutes {
   static const String editProfile = "/edit-profile";
   static const String notifications = '/notifications';
   static const String dossierDetail = '/dossier-detail';
+  static const String documentUpload = '/document-upload';
 }

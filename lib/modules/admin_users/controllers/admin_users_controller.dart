@@ -41,92 +41,14 @@ class AdminUsersController extends GetxController {
       _allUsers.assignAll(loaded);
       _applyFilters();
     } catch (e) {
-      print('Erreur lors du chargement des utilisateurs: $e');
-      users.assignAll([
-        {
-          'id': '1',
-          'name': 'Jean Dupont',
-          'email': 'jean@example.com',
-          'phone': '+237 6XX XXX XXX',
-          'role': 'user',
-          'status': 'active',
-          'registrationDate': DateTime.now().subtract(const Duration(days: 45)),
-          'lastLogin': DateTime.now().subtract(const Duration(hours: 2)),
-          'totalTransactions': 12,
-          'totalSpent': 285000,
-          'profilePicture': null,
-        },
-        {
-          'id': '2',
-          'name': 'Marie Claire',
-          'email': 'marie@example.com',
-          'phone': '+237 6XX XXX XXX',
-          'role': 'user',
-          'status': 'active',
-          'registrationDate': DateTime.now().subtract(const Duration(days: 32)),
-          'lastLogin': DateTime.now().subtract(const Duration(days: 1)),
-          'totalTransactions': 8,
-          'totalSpent': 195000,
-          'profilePicture': null,
-        },
-        {
-          'id': '3',
-          'name': 'Pierre Martin',
-          'email': 'pierre@example.com',
-          'phone': '+237 6XX XXX XXX',
-          'role': 'admin',
-          'status': 'active',
-          'registrationDate': DateTime.now().subtract(
-            const Duration(days: 120),
-          ),
-          'lastLogin': DateTime.now().subtract(const Duration(hours: 1)),
-          'totalTransactions': 0,
-          'totalSpent': 0,
-          'profilePicture': null,
-        },
-        {
-          'id': '4',
-          'name': 'Sophie Dubois',
-          'email': 'sophie@example.com',
-          'phone': '+237 6XX XXX XXX',
-          'role': 'user',
-          'status': 'inactive',
-          'registrationDate': DateTime.now().subtract(const Duration(days: 15)),
-          'lastLogin': DateTime.now().subtract(const Duration(days: 7)),
-          'totalTransactions': 3,
-          'totalSpent': 75000,
-          'profilePicture': null,
-        },
-        {
-          'id': '5',
-          'name': 'Antoine Leroy',
-          'email': 'antoine@example.com',
-          'phone': '+237 6XX XXX XXX',
-          'role': 'user',
-          'status': 'active',
-          'registrationDate': DateTime.now().subtract(const Duration(days: 67)),
-          'lastLogin': DateTime.now().subtract(const Duration(hours: 12)),
-          'totalTransactions': 15,
-          'totalSpent': 420000,
-          'profilePicture': null,
-        },
-        {
-          'id': '6',
-          'name': 'Admin Principal',
-          'email': 'admin@mhdcooperation.com',
-          'phone': '+237 6XX XXX XXX',
-          'role': 'sadmin',
-          'status': 'active',
-          'registrationDate': DateTime.now().subtract(
-            const Duration(days: 365),
-          ),
-          'lastLogin': DateTime.now().subtract(const Duration(minutes: 30)),
-          'totalTransactions': 0,
-          'totalSpent': 0,
-          'profilePicture': null,
-        },
-      ]);
-      _allUsers.assignAll(users);
+      // Jamais de données factices : un échec doit se voir comme un échec.
+      users.clear();
+      _allUsers.clear();
+      Get.snackbar(
+        'Erreur',
+        'Impossible de charger les utilisateurs. Vérifiez votre connexion.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -137,6 +59,11 @@ class AdminUsersController extends GetxController {
   ) {
     final data = doc.data();
     final normalizedRole = data['role']?.toString().toLowerCase() ?? 'user';
+    // `disabled` (bool) est le champ partagé avec la version web ; on garde le
+    // repli sur l'ancien champ `status` pour les documents historiques.
+    final bool isDisabled =
+        data['disabled'] == true ||
+        data['status']?.toString().toLowerCase() == 'inactive';
     return {
       'id': doc.id,
       'name': data['name']?.toString() ?? '',
@@ -144,7 +71,7 @@ class AdminUsersController extends GetxController {
       'phone':
           data['phone_number']?.toString() ?? data['phone']?.toString() ?? '',
       'role': normalizedRole,
-      'status': data['status']?.toString().toLowerCase() ?? 'active',
+      'status': isDisabled ? 'inactive' : 'active',
       'registrationDate': _parseDateTime(
         data['created_at'] ?? data['createdAt'],
       ),
@@ -226,22 +153,56 @@ class AdminUsersController extends GetxController {
     users.assignAll(filtered);
   }
 
-  void toggleUserStatus(String userId) {
+  /// Met à jour le doc localement dans les DEUX listes (filtrée + complète),
+  /// sinon les statistiques restent calculées sur des données périmées.
+  void _patchLocal(String userId, Map<String, dynamic> patch) {
+    for (final list in [users, _allUsers]) {
+      final index = list.indexWhere((user) => user['id'] == userId);
+      if (index != -1) {
+        list[index] = {...list[index], ...patch};
+      }
+    }
+    users.refresh();
+    _allUsers.refresh();
+  }
+
+  Future<void> toggleUserStatus(String userId) async {
     final userIndex = users.indexWhere((user) => user['id'] == userId);
-    if (userIndex != -1) {
-      final currentStatus = users[userIndex]['status'];
-      users[userIndex]['status'] = currentStatus == 'active'
-          ? 'inactive'
-          : 'active';
-      users.refresh();
+    if (userIndex == -1) return;
+    final bool disable = users[userIndex]['status'] == 'active';
+    try {
+      // Persistance réelle : `disabled` est le champ lu par la version web,
+      // `status` reste écrit pour les anciens lecteurs.
+      await _firestore.collection('users').doc(userId).update({
+        'disabled': disable,
+        'status': disable ? 'inactive' : 'active',
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+      _patchLocal(userId, {'status': disable ? 'inactive' : 'active'});
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        "Le changement de statut n'a pas pu être enregistré.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 
-  void changeUserRole(String userId, String newRole) {
-    final userIndex = users.indexWhere((user) => user['id'] == userId);
-    if (userIndex != -1) {
-      users[userIndex]['role'] = newRole;
-      users.refresh();
+  Future<void> changeUserRole(String userId, String newRole) async {
+    try {
+      // Rôle écrit en MAJUSCULES : convention du modèle (USER/ADMIN/SADMIN),
+      // également celle qu'écrit la version web.
+      await _firestore.collection('users').doc(userId).update({
+        'role': newRole.toUpperCase(),
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+      _patchLocal(userId, {'role': newRole.toLowerCase()});
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        "Le changement de rôle n'a pas pu être enregistré.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 

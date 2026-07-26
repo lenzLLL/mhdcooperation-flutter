@@ -84,3 +84,6 @@ desktop.ini
 .svn/
 .swiftpm/
 migrate_working_dir/
+
+# Artefacts de build Android (apparaissaient en untracked)
+android/build/
