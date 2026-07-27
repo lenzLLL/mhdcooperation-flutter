@@ -1,8 +1,8 @@
 import 'package:mhdcooperation/data/models/services.dart';
 
-/// Numéro WhatsApp unique pour la demande « Autre » (était différent entre
-/// l'accueil et la page services : 681 186 114 vs 686 800 440).
-const String autreWhatsappNumber = '237686800440';
+/// Numéro WhatsApp unique de la coopérative (toutes les redirections WhatsApp).
+/// Doit rester identique à WHATSAPP_NUMBER côté web.
+const String autreWhatsappNumber = '237681186114';
 
 /// Catalogue STATIQUE unique des services — source de vérité partagée entre
 /// l'accueil et la page « Nos Services » (avant ce fichier, chaque contrôleur
@@ -63,6 +63,37 @@ final List<Services> servicesCatalog = [
     ],
   ),
 ];
+
+/// Formules du service « Dossiers Passeport/CNI ».
+/// Doit rester identique à CNI_PASSEPORT_OPTIONS côté web
+/// (mhd/src/lib/service-pricing.ts).
+const List<ServiceSubOption> cniPasseportOptions = [
+  ServiceSubOption(id: 'cni_simple', label: 'CNI — simple', price: 25000),
+  ServiceSubOption(id: 'cni_vip', label: 'CNI — VIP', price: 30000),
+  ServiceSubOption(id: 'cni_super_vip', label: 'CNI — Super VIP', price: 50000),
+  ServiceSubOption(id: 'passeport_classe_k', label: 'Passeport — Classe K', price: 100000),
+  ServiceSubOption(id: 'passeport_vip', label: 'Passeport — VIP Pass', price: 135000),
+  ServiceSubOption(id: 'passeport_super_vip', label: 'Passeport — Super VIP', price: 150000),
+];
+
+const List<String> _docsCni = [
+  'Acte de naissance',
+  'Carte originale ou ancienne CNI',
+];
+
+const List<String> _docsPasseport = [
+  'Acte de naissance',
+  'CNI',
+  'Acte de naissance du parent',
+  "Acte de naissance de l'enfant (si mineur)",
+];
+
+/// Pièces exigées par formule CNI/Passeport (demandées après paiement).
+List<String> documentsForSubOption(String subOptionId) {
+  if (subOptionId.startsWith('cni_')) return _docsCni;
+  if (subOptionId.startsWith('passeport_')) return _docsPasseport;
+  return const [];
+}
 
 /// Entrée « Autre » (redirection WhatsApp) : affichée en fin de liste sur
 /// l'accueil ; la page « Nos Services » a sa propre carte dédiée.

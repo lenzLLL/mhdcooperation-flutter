@@ -95,6 +95,33 @@ class AdminMetricsView extends GetView<AdminMetricsController> {
                 ],
               ),
 
+              // Retrait de l'argent : super-admin uniquement. L'opération
+              // Mobile Money elle-même est exécutée depuis la console web
+              // (c'est elle qui détient les clés de la passerelle).
+              if (_isSadmin) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Get.snackbar(
+                      "Retrait de l'argent",
+                      "Le retrait s'effectue depuis la console web d'administration.",
+                      snackPosition: SnackPosition.BOTTOM,
+                    ),
+                    icon: const Icon(Icons.account_balance_wallet_rounded),
+                    label: const Text("Retirer l'argent"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 32),
 
               // Section revenus — SADMIN uniquement

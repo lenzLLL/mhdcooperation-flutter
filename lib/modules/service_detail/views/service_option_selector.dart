@@ -1,27 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mhdcooperation/core/values/app_colors.dart';
+import 'package:mhdcooperation/data/constants/services_catalog.dart';
+import 'package:mhdcooperation/data/constants/villes_cameroun.dart';
 import 'package:mhdcooperation/data/models/ecoles.dart';
 import 'package:mhdcooperation/data/models/services.dart';
 import 'package:mhdcooperation/data/services/school_service.dart';
 import 'package:mhdcooperation/data/services/session_service.dart';
 import 'package:mhdcooperation/routes/app_routes.dart';
 
-const _villesCameroun = [
-  'Bafoussam',
-  'Bamenda',
-  'Bertoua',
-  'Buea',
-  'Douala',
-  'Ebolowa',
-  'Garoua',
-  'Kumba',
-  'Limbé',
-  'Maroua',
-  'Ngaoundéré',
-  'Nkongsamba',
-  'Yaoundé',
-];
+// Liste unique partagée (villes_cameroun.dart) : une liste locale divergente
+// produirait des villes non filtrables côté admin.
+const _villesCameroun = villesCameroun;
 
 class ServiceOptionSelector extends StatefulWidget {
   final Services service;
@@ -72,12 +62,8 @@ class _ServiceOptionSelectorState extends State<ServiceOptionSelector> {
     if (widget.service.subOptions?.isNotEmpty == true) {
       return widget.service.subOptions!;
     }
-    if (_isCniPasseport) {
-      return const [
-        ServiceSubOption(id: 'cni', label: 'CNI', price: 5000),
-        ServiceSubOption(id: 'passeport', label: 'Passeport', price: 15000),
-      ];
-    }
+    // Tarifs centralisés (services_catalog.dart), identiques au web.
+    if (_isCniPasseport) return cniPasseportOptions;
     if (_isPolice) {
       return const [
         ServiceSubOption(id: 'simple', label: 'Certificat de police simple', price: 5000),
@@ -193,11 +179,21 @@ class _ServiceOptionSelectorState extends State<ServiceOptionSelector> {
 
   void _confirmSubOption() {
     if (_selectedSubOption == null) return;
-    _navigateToPayment(
-      itemTitle: '${widget.service.name} — ${_selectedSubOption!.label}',
-      amount: _selectedSubOption!.price,
-      selection: {'kind': 'suboption', 'subOptionId': _selectedSubOption!.id},
-    );
+    // Pièces liées à la formule (CNI/Passeport) : elles ne seront demandées
+    // qu'après paiement, mais doivent accompagner le dossier dès sa création.
+    final docs = documentsForSubOption(_selectedSubOption!.id);
+    Navigator.pop(context);
+    Get.toNamed(AppRoutes.payment, arguments: {
+      'type': 'service',
+      'itemId': widget.service.id,
+      'itemTitle': '${widget.service.name} — ${_selectedSubOption!.label}',
+      'amount': _selectedSubOption!.price,
+      'serviceId': widget.service.id,
+      'ville': _selectedVille,
+      'quartier': _quartierController.text.trim(),
+      'selection': {'kind': 'suboption', 'subOptionId': _selectedSubOption!.id},
+      if (docs.isNotEmpty) 'requiredDocuments': docs,
+    });
   }
 
   void _confirmRapport() {

@@ -340,28 +340,10 @@ class AdminConcoursView extends GetView<AdminConcoursController> {
                   DropdownButtonFormField<String>(
                     value: sessionCategoryController.text.isNotEmpty ? sessionCategoryController.text : null,
                     decoration: const InputDecoration(labelText: 'Catégorie (optionnel)'),
-                    items: const [
-                      DropdownMenuItem<String>(
-                        value: 'Ingénierie',
-                        child: Text('Ingénierie'),
-                      ),
-                      DropdownMenuItem<String>(
-                        value: 'Gestion et Management',
-                        child: Text('Gestion et Management'),
-                      ),
-                      DropdownMenuItem<String>(
-                        value: 'Médécine/Santé',
-                        child: Text('Médécine/Santé'),
-                      ),
-                      DropdownMenuItem<String>(
-                        value: 'Administration',
-                        child: Text('Administration'),
-                      ),
-                      DropdownMenuItem<String>(
-                        value: 'Enseignement',
-                        child: Text('Enseignement'),
-                      ),
-                    ],
+                    // Catégories partagées avec le web (villes_cameroun.dart).
+                    items: concoursCategories
+                        .map((c) => DropdownMenuItem<String>(value: c, child: Text(c)))
+                        .toList(),
                     onChanged: (value) {
                       sessionCategoryController.text = value ?? '';
                     },
@@ -842,28 +824,10 @@ class AdminConcoursView extends GetView<AdminConcoursController> {
                   DropdownButtonFormField<String>(
                     value: sessionCategoryController.text.isNotEmpty ? sessionCategoryController.text : null,
                     decoration: const InputDecoration(labelText: 'Catégorie (optionnel)'),
-                    items: const [
-                      DropdownMenuItem<String>(
-                        value: 'Ingénierie',
-                        child: Text('Ingénierie'),
-                      ),
-                      DropdownMenuItem<String>(
-                        value: 'Gestion et Management',
-                        child: Text('Gestion et Management'),
-                      ),
-                      DropdownMenuItem<String>(
-                        value: 'Médécine/Santé',
-                        child: Text('Médécine/Santé'),
-                      ),
-                      DropdownMenuItem<String>(
-                        value: 'Administration',
-                        child: Text('Administration'),
-                      ),
-                      DropdownMenuItem<String>(
-                        value: 'Enseignement',
-                        child: Text('Enseignement'),
-                      ),
-                    ],
+                    // Catégories partagées avec le web (villes_cameroun.dart).
+                    items: concoursCategories
+                        .map((c) => DropdownMenuItem<String>(value: c, child: Text(c)))
+                        .toList(),
                     onChanged: (value) {
                       sessionCategoryController.text = value ?? '';
                     },

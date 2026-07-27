@@ -139,7 +139,11 @@ class _PaymentViewState extends State<PaymentView> {
       }
 
       if (!mounted) return;
+      // Aller au détail du dossier plutôt qu'à la liste : c'est là que le
+      // statut se met à jour et que les pièces à fournir s'ouvrent une fois le
+      // paiement confirmé.
       Get.offAllNamed(AppRoutes.userDossiers);
+      Get.toNamed(AppRoutes.dossierDetail, arguments: {'dossierId': dossierId});
     } on ApiException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

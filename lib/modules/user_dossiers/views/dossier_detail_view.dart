@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/core/values/app_colors.dart';
+import 'package:mhdcooperation/data/models/dossier_model.dart';
 import 'package:mhdcooperation/modules/user_dossiers/controllers/dossier_detail_controller.dart';
 import 'package:mhdcooperation/data/services/session_service.dart';
+import 'package:mhdcooperation/routes/app_routes.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class DossierDetailView extends GetView<DossierDetailController> {
@@ -163,6 +166,10 @@ class DossierDetailView extends GetView<DossierDetailController> {
                   ],
                 ),
               ),
+
+              // Pièces à fournir — visibles seulement une fois le dossier payé.
+              _buildDocumentsSection(context, current),
+
               // Messages
               Expanded(
                 child: Column(
@@ -612,6 +619,113 @@ class DossierDetailView extends GetView<DossierDetailController> {
           ),
         );
       }),
+    );
+  }
+
+  /// Pièces du dossier : tant que le paiement n'est pas confirmé (statut
+  /// `pending`), on annonce seulement ce qui sera demandé ; le dépôt s'ouvre
+  /// après paiement. Même règle que la version web.
+  Widget _buildDocumentsSection(BuildContext context, DossierModel dossier) {
+    final docs = dossier.documentsTracking.isNotEmpty
+        ? dossier.documentsTracking.map((d) => d.name).toList()
+        : (dossier.requiredDocuments ?? const <String>[]);
+    if (docs.isEmpty) return const SizedBox.shrink();
+
+    final awaitingPayment = dossier.status.toLowerCase() == 'pending';
+    final validated = dossier.documentsTracking
+        .where((d) => d.status == 'validated')
+        .length;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  awaitingPayment ? Icons.lock_outline_rounded : Icons.folder_open_rounded,
+                  size: 20,
+                  color: awaitingPayment ? Colors.grey : Colors.blue.shade700,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Pièces à fournir',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                if (!awaitingPayment && dossier.documentsTracking.isNotEmpty)
+                  Text(
+                    '$validated/${dossier.documentsTracking.length}',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (awaitingPayment)
+              Text(
+                '${docs.length} pièce(s) à prévoir. Le dépôt sera ouvert dès la '
+                'confirmation du paiement.',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.5),
+              )
+            else ...[
+              ...docs.take(4).map(
+                    (name) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.description_outlined, size: 14, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(name, style: const TextStyle(fontSize: 13)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              if (docs.length > 4)
+                Text(
+                  '+ ${docs.length - 4} autre(s)',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Get.toNamed(
+                    AppRoutes.documentUpload,
+                    arguments: {
+                      'dossierId': dossier.id,
+                      'serviceId': dossier.serviceId,
+                      'concoursId': dossier.concoursId,
+                      'itemTitle': dossier.itemTitle ?? '',
+                      'requiredDocuments': docs,
+                    },
+                  ),
+                  icon: const Icon(Icons.upload_file_rounded, size: 18),
+                  label: const Text('Déposer mes pièces'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
