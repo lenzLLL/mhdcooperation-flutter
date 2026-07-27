@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -29,49 +30,61 @@ class DossierDetailController extends GetxController {
     // Handle both DossierModel and dossierId argument
     if (args is DossierModel) {
       dossier.value = args;
+      // Même quand le dossier est passé en argument, on écoute la base : une
+      // modification faite par l'admin pendant que l'écran est ouvert doit
+      // s'afficher, et surtout le montant affiché doit rester celui de la base
+      // avant tout paiement.
+      _listenToDossier(args.id);
       loadMessages();
     } else if (args is Map && args['dossierId'] != null) {
-      // Load dossier from Firestore using ID
-      _loadDossierById(args['dossierId'] as String);
+      _listenToDossier(args['dossierId'] as String);
     }
   }
 
   @override
   void onClose() {
+    _dossierSub?.cancel();
     messageController.dispose();
     super.onClose();
+  }
+
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _dossierSub;
+
+  /// Écoute temps réel du dossier : statut, montant et suivi des pièces
+  /// restent alignés sur la base sans action de l'utilisateur.
+  void _listenToDossier(String dossierId) {
+    _dossierSub?.cancel();
+    isLoading.value = dossier.value == null;
+    _dossierSub = _firestore
+        .collection('dossiers')
+        .doc(dossierId)
+        .snapshots()
+        .listen(
+      (doc) {
+        final data = doc.data();
+        if (doc.exists && data != null) {
+          final wasEmpty = dossier.value == null;
+          dossier.value = DossierModel.fromJson({'id': dossierId, ...data});
+          if (wasEmpty) loadMessages();
+        }
+        isLoading.value = false;
+      },
+      onError: (_) {
+        isLoading.value = false;
+        Get.showSnackbar(
+          const GetSnackBar(
+            title: 'Erreur',
+            message: 'Impossible de charger le dossier',
+            duration: Duration(seconds: 3),
+          ),
+        );
+      },
+    );
   }
 
   CollectionReference<Map<String, dynamic>> _messagesCollection(
     String dossierId,
   ) => _firestore.collection('dossiers').doc(dossierId).collection('messages');
-
-  Future<void> _loadDossierById(String dossierId) async {
-    try {
-      isLoading.value = true;
-      final doc = await _firestore.collection('dossiers').doc(dossierId).get();
-      if (doc.exists) {
-        final data = doc.data();
-        if (data != null) {
-          final dossierModel = DossierModel.fromJson({
-            'id': dossierId,
-            ...data,
-          });
-          dossier.value = dossierModel;
-          await loadMessages();
-        }
-      }
-    } catch (e) {
-      Get.showSnackbar(
-        GetSnackBar(
-          title: 'Erreur',
-          message: 'Impossible de charger le dossier',
-        ),
-      );
-    } finally {
-      isLoading.value = false;
-    }
-  }
 
   Future<void> loadMessages() async {
     final d = dossier.value;

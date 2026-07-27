@@ -124,6 +124,29 @@ class _PaymentViewState extends State<PaymentView> {
       _dossierId = dossierId;
 
       if (widget.amount > 0) {
+        // Le montant affiché a pu être modifié par l'admin depuis l'ouverture
+        // de l'écran. On relit le dossier avant de déclencher le débit : si le
+        // prix a changé, on n'engage rien et on prévient l'utilisateur.
+        final fresh = await api.get('/api/dossiers/$dossierId');
+        final freshAmount = (fresh['dossier']?['amount'] as num?)?.toDouble();
+        if (freshAmount != null && freshAmount != widget.amount) {
+          if (!mounted) return;
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Le montant de ce dossier est désormais de '
+                '${freshAmount.toStringAsFixed(0)} FCFA. Vérifiez puis relancez le paiement.',
+              ),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+          Get.offAllNamed(AppRoutes.userDossiers);
+          Get.toNamed(AppRoutes.dossierDetail, arguments: {'dossierId': dossierId});
+          return;
+        }
+
         final operator = _selectedOperator == 'MTN' ? 'MTN_MOMO_CMR' : 'ORANGE_CMR';
         await api.post('/api/dossiers/$dossierId/paiement', {
           'operator': operator,
