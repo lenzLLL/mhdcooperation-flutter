@@ -481,7 +481,7 @@ class AdminConcoursView extends GetView<AdminConcoursController> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // PDF Supplémentaire
+                      // Arrêté officiel du concours (PDF)
                       Card(
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
@@ -495,7 +495,7 @@ class AdminConcoursView extends GetView<AdminConcoursController> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('PDF Supplémentaire', style: TextStyle(fontWeight: FontWeight.bold)),
+                                        const Text('Arrêté (PDF)', style: TextStyle(fontWeight: FontWeight.bold)),
                                         if (pdfFile != null)
                                           Text(
                                             pdfFile!.path.split('/').last,
@@ -975,7 +975,7 @@ class AdminConcoursView extends GetView<AdminConcoursController> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // PDF Supplémentaire
+                      // Arrêté officiel du concours (PDF)
                       Card(
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
@@ -989,7 +989,7 @@ class AdminConcoursView extends GetView<AdminConcoursController> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('PDF Supplémentaire', style: TextStyle(fontWeight: FontWeight.bold)),
+                                        const Text('Arrêté (PDF)', style: TextStyle(fontWeight: FontWeight.bold)),
                                         if (pdfFile != null)
                                           Text(
                                             pdfFile!.path.split('/').last,

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/core/values/app_colors.dart';
 import 'package:mhdcooperation/data/models/concours.dart';
 import 'package:mhdcooperation/routes/app_routes.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -393,6 +394,13 @@ class ConcourDetailView extends StatelessWidget {
                         ),
                     ],
                   ),
+
+                  // Arrêté officiel du concours (PDF) — téléchargeable sans compte.
+                  if (concour.pdfUrl != null && concour.pdfUrl!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _buildArreteCard(context, concour.pdfUrl!),
+                  ],
+
                   const SizedBox(height: 24),
                 ],
               ),
@@ -401,6 +409,63 @@ class ConcourDetailView extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildArreteCard(BuildContext context, String pdfUrl) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => _launchUrlOrWarn(context, pdfUrl),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.description_rounded,
+                  color: AppColors.primary, size: 22),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Arrêté du concours',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 2),
+                  Text('Document officiel (PDF)',
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+            ),
+            const Icon(Icons.download_rounded, color: AppColors.primary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Ouvre une URL de document ou prévient si elle est inexploitable.
+  Future<void> _launchUrlOrWarn(BuildContext context, String rawUrl) async {
+    final url = Uri.tryParse(rawUrl.trim());
+    if (url == null || !await canLaunchUrl(url)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossible d\'ouvrir ce document.')),
+        );
+      }
+      return;
+    }
+    await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
   Widget _buildSmallInfoRow({

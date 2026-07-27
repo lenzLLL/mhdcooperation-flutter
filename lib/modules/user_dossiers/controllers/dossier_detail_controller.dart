@@ -50,6 +50,27 @@ class DossierDetailController extends GetxController {
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _dossierSub;
 
+  /// Arrêté (PDF) du concours lié au dossier, relu depuis le concours pour que
+  /// le candidat ait toujours la dernière version publiée.
+  final RxnString arreteUrl = RxnString();
+  String? _arreteLoadedFor;
+
+  Future<void> _loadArrete(String? concoursId) async {
+    if (concoursId == null || concoursId.isEmpty) {
+      arreteUrl.value = null;
+      return;
+    }
+    if (_arreteLoadedFor == concoursId) return;
+    _arreteLoadedFor = concoursId;
+    try {
+      final doc = await _firestore.collection('concours').doc(concoursId).get();
+      final url = doc.data()?['pdf_url']?.toString();
+      arreteUrl.value = (url != null && url.isNotEmpty) ? url : null;
+    } catch (_) {
+      arreteUrl.value = null;
+    }
+  }
+
   /// Écoute temps réel du dossier : statut, montant et suivi des pièces
   /// restent alignés sur la base sans action de l'utilisateur.
   void _listenToDossier(String dossierId) {
@@ -65,6 +86,7 @@ class DossierDetailController extends GetxController {
         if (doc.exists && data != null) {
           final wasEmpty = dossier.value == null;
           dossier.value = DossierModel.fromJson({'id': dossierId, ...data});
+          _loadArrete(dossier.value?.concoursId);
           if (wasEmpty) loadMessages();
         }
         isLoading.value = false;

@@ -167,6 +167,64 @@ class DossierDetailView extends GetView<DossierDetailController> {
                 ),
               ),
 
+              // Arrêté du concours : disponible une fois le dossier payé.
+              Obx(() {
+                final url = ctrl.arreteUrl.value;
+                if (url == null || current.status.toLowerCase() == 'pending') {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () async {
+                      final uri = Uri.tryParse(url);
+                      if (uri != null && await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.description_rounded,
+                                color: AppColors.primary, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Arrêté du concours",
+                                    style: TextStyle(
+                                        fontSize: 14, fontWeight: FontWeight.bold)),
+                                SizedBox(height: 2),
+                                Text('Document officiel (PDF)',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.download_rounded,
+                              color: AppColors.primary, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+
               // Pièces à fournir — visibles seulement une fois le dossier payé.
               _buildDocumentsSection(context, current),
 
