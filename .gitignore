@@ -87,3 +87,6 @@ migrate_working_dir/
 
 # Artefacts de build Android (apparaissaient en untracked)
 android/build/
+
+# Règles Firestore : conservées en local, le projet fonctionne sans
+firestore.rules

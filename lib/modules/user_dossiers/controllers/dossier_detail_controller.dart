@@ -7,7 +7,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
 import 'package:mhdcooperation/data/models/dossier_message.dart';
 import 'package:mhdcooperation/data/models/dossier_model.dart';
+import 'package:mhdcooperation/data/services/recu_service.dart';
 import 'package:mhdcooperation/data/services/session_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DossierDetailController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -50,6 +52,47 @@ class DossierDetailController extends GetxController {
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _dossierSub;
 
+  final RxBool isDownloadingRecu = false.obs;
+  bool _recuAutoDownloaded = false;
+
+  /// Premier passage à l'état payé : le reçu part automatiquement, une seule
+  /// fois par session d'écran (silencieux en cas d'échec, le bouton reste là).
+  void _autoDownloadRecuOnce(DossierModel d) {
+    if (_recuAutoDownloaded) return;
+    if (d.status.toLowerCase() == 'pending') return;
+    _recuAutoDownloaded = true;
+    downloadRecu(silent: true);
+  }
+
+  /// Télécharge le reçu de versement et l'ouvre. Appelé automatiquement à la
+  /// première ouverture d'un dossier payé, et à la demande via le bouton.
+  Future<void> downloadRecu({bool silent = false}) async {
+    final d = dossier.value;
+    if (d == null || isDownloadingRecu.value) return;
+    isDownloadingRecu.value = true;
+    try {
+      final file = await RecuService().download(d.id);
+      final uri = Uri.file(file.path);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else if (!silent) {
+        Get.snackbar('Reçu enregistré', 'Fichier : ${file.path}',
+            snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 5));
+      }
+    } on RecuException catch (e) {
+      if (!silent) {
+        Get.snackbar('Reçu', e.message, snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (_) {
+      if (!silent) {
+        Get.snackbar('Reçu', "Le reçu n'a pas pu être téléchargé.",
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    } finally {
+      isDownloadingRecu.value = false;
+    }
+  }
+
   /// Arrêté (PDF) du concours lié au dossier, relu depuis le concours pour que
   /// le candidat ait toujours la dernière version publiée.
   final RxnString arreteUrl = RxnString();
@@ -87,6 +130,7 @@ class DossierDetailController extends GetxController {
           final wasEmpty = dossier.value == null;
           dossier.value = DossierModel.fromJson({'id': dossierId, ...data});
           _loadArrete(dossier.value?.concoursId);
+          _autoDownloadRecuOnce(dossier.value!);
           if (wasEmpty) loadMessages();
         }
         isLoading.value = false;

@@ -167,6 +167,65 @@ class DossierDetailView extends GetView<DossierDetailController> {
                 ),
               ),
 
+              // Reçu de versement : téléchargé automatiquement dès le paiement,
+              // puis disponible à tout moment.
+              if (current.status.toLowerCase() != 'pending')
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+                  child: Obx(() => InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: ctrl.isDownloadingRecu.value ? null : ctrl.downloadRecu,
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.receipt_long_rounded,
+                                    color: Color(0xFF10B981), size: 22),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      ctrl.isDownloadingRecu.value
+                                          ? 'Génération du reçu…'
+                                          : 'Télécharger le reçu de versement',
+                                      style: const TextStyle(
+                                          fontSize: 14, fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    const Text('PDF officiel MhD',
+                                        style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                  ],
+                                ),
+                              ),
+                              if (ctrl.isDownloadingRecu.value)
+                                const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2))
+                              else
+                                const Icon(Icons.download_rounded,
+                                    color: AppColors.primary, size: 20),
+                            ],
+                          ),
+                        ),
+                      )),
+                ),
+
               // Arrêté du concours : disponible une fois le dossier payé.
               Obx(() {
                 final url = ctrl.arreteUrl.value;
@@ -785,47 +844,6 @@ class DossierDetailView extends GetView<DossierDetailController> {
         ),
       ),
     );
-  }
-
-  Widget _buildDetailChip(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1F4A78),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatAmount(double amount) {
-    if (amount == 0) return 'Gratuit';
-    return '${amount.toStringAsFixed(0)} FCFA';
   }
 
   Widget _buildInfoCard({
