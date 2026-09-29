@@ -364,9 +364,9 @@ class _PaymentViewState extends State<PaymentView> {
                           const SizedBox(height: 14),
                           Row(
                             children: [
-                              Expanded(child: _operatorCard('Orange', Colors.orange, Icons.signal_cellular_alt_rounded)),
+                              Expanded(child: _operatorCard('Orange', 'Orange Money', Colors.orange, Icons.signal_cellular_alt_rounded)),
                               const SizedBox(width: 12),
-                              Expanded(child: _operatorCard('MTN', const Color(0xFFFFCC00), Icons.signal_cellular_alt_2_bar_rounded)),
+                              Expanded(child: _operatorCard('MTN', 'Mobile Money', const Color(0xFFFFCC00), Icons.signal_cellular_alt_2_bar_rounded)),
                             ],
                           ),
                         ],
@@ -414,7 +414,9 @@ class _PaymentViewState extends State<PaymentView> {
     );
   }
 
-  Widget _operatorCard(String name, Color color, IconData icon) {
+  /// [name] identifie l'opérateur ; [wallet] est le nom du portefeuille affiché
+  /// (Orange Money pour Orange, Mobile Money pour MTN MoMo).
+  Widget _operatorCard(String name, String wallet, Color color, IconData icon) {
     final selected = _selectedOperator == name;
     return GestureDetector(
       onTap: () => setState(() => _selectedOperator = name),
@@ -434,12 +436,17 @@ class _PaymentViewState extends State<PaymentView> {
             Icon(icon, color: selected ? color : Colors.grey[400], size: 28),
             const SizedBox(height: 6),
             Text(
-              name,
+              wallet,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: selected ? color : Colors.grey[600],
               ),
+            ),
+            Text(
+              name,
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
             ),
             if (selected) ...[
               const SizedBox(height: 4),

@@ -20,17 +20,22 @@ class HelpView extends GetView<HelpController> {
             _buildFaqItem(
               question: 'Comment créer un compte ?',
               answer:
-                  'Pour créer un compte, cliquez sur "S\'inscrire" et remplissez le formulaire avec vos informations personnelles.',
+                  'Cliquez sur « S\'inscrire », renseignez votre nom, email, téléphone et ville, puis choisissez un mot de passe.',
             ),
             _buildFaqItem(
               question: 'Comment rechercher un concours ?',
               answer:
-                  'Utilisez la barre de recherche dans la section "Concours" ou naviguez dans les différentes catégories.',
+                  'Utilisez la barre de recherche dans la section « Concours » ou naviguez dans les différentes catégories et filtres (ville, école, délai).',
+            ),
+            _buildFaqItem(
+              question: 'Comment suivre mon dossier ?',
+              answer:
+                  'Accédez à « Mes dossiers » depuis votre compte pour voir l\'état de chaque pièce et le statut global de votre dossier.',
             ),
             _buildFaqItem(
               question: 'Comment contacter le support ?',
               answer:
-                  'Vous pouvez nous contacter via l\'email support@mhdcooperation.com, par téléphone au +237658639119 ou utiliser le formulaire de contact ci-dessous.',
+                  'Par email à helpdocs4@gmail.com, ou par téléphone / WhatsApp au 681 186 114.',
             ),
 
             const SizedBox(height: 32),
@@ -41,17 +46,17 @@ class HelpView extends GetView<HelpController> {
             _buildContactItem(
               icon: Icons.email,
               title: 'Email',
-              subtitle: 'support@mhdcooperation.com',
+              subtitle: 'helpdocs4@gmail.com',
             ),
             _buildContactItem(
               icon: Icons.phone,
-              title: 'Téléphone',
-              subtitle: '+237658639119',
+              title: 'Téléphone / WhatsApp',
+              subtitle: '681 186 114',
             ),
             _buildContactItem(
               icon: Icons.location_on,
-              title: 'Adresse',
-              subtitle: 'Yaoundé, Cameroun',
+              title: 'Adresses',
+              subtitle: 'Yaoundé · Douala · Bafoussam — Cameroun',
             ),
 
             const SizedBox(height: 32),

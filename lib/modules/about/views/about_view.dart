@@ -60,7 +60,7 @@ class AboutView extends GetView<AboutController> {
         ),
         const SizedBox(height: 16),
         const Text(
-          'MHD Cooperation',
+          'MhD · Mr Help Documents',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
@@ -122,23 +122,22 @@ class AboutView extends GetView<AboutController> {
         _buildFeatureItem(
           icon: Icons.menu_book,
           title: 'Concours & Recrutements',
-          description: 'Accès à tous les concours disponibles au Cameroun',
+          description: 'Tous les concours du Cameroun',
         ),
         _buildFeatureItem(
           icon: Icons.school,
           title: 'Écoles & Formations',
-          description:
-              'Informations détaillées sur les établissements éducatifs',
+          description: 'Informations sur les établissements',
         ),
         _buildFeatureItem(
           icon: Icons.assignment,
           title: 'Services Administratifs',
-          description: 'Accompagnement pour vos démarches administratives',
+          description: 'Accompagnement pour vos démarches',
         ),
         _buildFeatureItem(
           icon: Icons.support,
           title: 'Support & Assistance',
-          description: 'Équipe disponible pour vous accompagner',
+          description: 'Équipe disponible pour vous aider',
         ),
       ],
     );
@@ -256,19 +255,14 @@ class AboutView extends GetView<AboutController> {
         ),
         const SizedBox(height: 16),
         _buildLinkItem(
-          icon: Icons.web,
-          title: 'Site Web',
-          subtitle: 'www.mhdcooperation.com',
-        ),
-        _buildLinkItem(
           icon: Icons.email,
           title: 'Contact',
-          subtitle: 'contact@mhdcooperation.com',
+          subtitle: 'helpdocs4@gmail.com',
         ),
         _buildLinkItem(
           icon: Icons.phone,
           title: 'Support',
-          subtitle: '+237 6XX XXX XXX',
+          subtitle: '681 186 114',
         ),
       ],
     );

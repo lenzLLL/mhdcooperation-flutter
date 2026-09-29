@@ -4,10 +4,14 @@ class ServiceSubOption {
   final String label;
   final double price;
 
+  /// Ce que comprend la formule, affiché sous son libellé.
+  final String? description;
+
   const ServiceSubOption({
     required this.id,
     required this.label,
     required this.price,
+    this.description,
   });
 
   factory ServiceSubOption.fromJson(Map<String, dynamic> json) {
@@ -15,10 +19,16 @@ class ServiceSubOption {
       id: json['id']?.toString() ?? '',
       label: json['label']?.toString() ?? '',
       price: (json['price'] is num) ? (json['price'] as num).toDouble() : 0.0,
+      description: json['description']?.toString(),
     );
   }
 
-  Map<String, dynamic> toJson() => {'id': id, 'label': label, 'price': price};
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'label': label,
+        'price': price,
+        if (description != null) 'description': description,
+      };
 }
 
 class Services {

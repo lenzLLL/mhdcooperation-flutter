@@ -64,15 +64,7 @@ class _ServiceOptionSelectorState extends State<ServiceOptionSelector> {
     }
     // Tarifs centralisés (services_catalog.dart), identiques au web.
     if (_isCniPasseport) return cniPasseportOptions;
-    if (_isPolice) {
-      return const [
-        ServiceSubOption(id: 'simple', label: 'Certificat de police simple', price: 5000),
-        ServiceSubOption(
-            id: 'minrex',
-            label: 'Certificat de police + légalisation au Minrex',
-            price: 25000),
-      ];
-    }
+    if (_isPolice) return policeOptions;
     return [];
   }
 
@@ -231,12 +223,18 @@ class _ServiceOptionSelectorState extends State<ServiceOptionSelector> {
 
   void _confirmBts() {
     if (!_canConfirmBts) return;
-    _navigateToPayment(
-      itemTitle:
-          '${widget.service.name} — $_selectedNiveau (${_selectedSchool!.name})',
-      amount: _btsPrix,
-      selection: {'kind': 'bts', 'schoolId': _selectedSchool!.id, 'niveau': _selectedNiveau!},
-    );
+    Navigator.pop(context);
+    Get.toNamed(AppRoutes.payment, arguments: {
+      'type': 'service',
+      'itemId': widget.service.id,
+      'itemTitle': '${widget.service.name} — $_selectedNiveau (${_selectedSchool!.name})',
+      'amount': _btsPrix,
+      'serviceId': widget.service.id,
+      'ville': _selectedVille,
+      'quartier': _quartierController.text.trim(),
+      'selection': {'kind': 'bts', 'schoolId': _selectedSchool!.id, 'niveau': _selectedNiveau!},
+      'requiredDocuments': btsDocuments(_selectedSchool!.docsParNiveau, _selectedNiveau!),
+    });
   }
 
   @override
@@ -791,6 +789,13 @@ class _ServiceOptionSelectorState extends State<ServiceOptionSelector> {
                       color: selected ? AppColors.secondary : Colors.grey[600],
                     ),
                   ),
+                  if (opt.description != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      opt.description!,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600], height: 1.4),
+                    ),
+                  ],
                 ],
               ),
             ),

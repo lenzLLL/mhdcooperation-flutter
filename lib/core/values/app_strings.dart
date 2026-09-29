@@ -1,5 +1,5 @@
 class AppStrings {
-  static const String appName = 'Mhd Cooperation';
+  static const String appName = 'MhD';
 
   // Splash Screen
   static const String splashTagline =

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/data/constants/services_catalog.dart';
 import 'package:mhdcooperation/data/models/ecoles.dart';
 import 'package:mhdcooperation/data/services/school_service.dart';
 import 'package:mhdcooperation/routes/app_routes.dart';
@@ -57,7 +58,7 @@ class _SchoolLevelSelectorState extends State<SchoolLevelSelector> {
 
   void _confirm() {
     Navigator.pop(context);
-    final docs = _selectedSchool!.docsParNiveau[_selectedNiveau!] ?? [];
+    final docs = btsDocuments(_selectedSchool!.docsParNiveau, _selectedNiveau!);
     Get.toNamed(
       AppRoutes.payment,
       arguments: {

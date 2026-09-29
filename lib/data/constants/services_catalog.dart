@@ -19,13 +19,13 @@ final List<Services> servicesCatalog = [
     id: '2',
     name: 'Dossiers BTS, Licence, Bachelor, Master et HND',
     desc:
-        "Constituez vos dossiers d examen facilement et rapidement grace à notre équipe expérimenté et dynamique",
+        "Constituez vos dossiers d'examen facilement et rapidement grâce à notre équipe expérimentée et dynamique",
   ),
   Services(
     id: '3',
     name: 'Dossiers Passeport/CNI',
     desc:
-        'Constituez vos dossiers de passeport ou de cni facilement et rapidement grace à notre équipe expérimenté et dynamique',
+        'Constituez vos dossiers de passeport ou de CNI facilement et rapidement grâce à notre équipe expérimentée et dynamique',
   ),
   Services(
     id: '4',
@@ -68,13 +68,83 @@ final List<Services> servicesCatalog = [
 /// Doit rester identique à CNI_PASSEPORT_OPTIONS côté web
 /// (mhd/src/lib/service-pricing.ts).
 const List<ServiceSubOption> cniPasseportOptions = [
-  ServiceSubOption(id: 'cni_simple', label: 'CNI — simple', price: 25000),
-  ServiceSubOption(id: 'cni_vip', label: 'CNI — VIP', price: 30000),
-  ServiceSubOption(id: 'cni_super_vip', label: 'CNI — Super VIP', price: 50000),
-  ServiceSubOption(id: 'passeport_classe_k', label: 'Passeport — Classe K', price: 100000),
-  ServiceSubOption(id: 'passeport_vip', label: 'Passeport — VIP Pass', price: 135000),
-  ServiceSubOption(id: 'passeport_super_vip', label: 'Passeport — Super VIP', price: 150000),
+  ServiceSubOption(
+    id: 'cni_simple',
+    label: 'CNI — simple',
+    price: 25000,
+    description: "Constitution et dépôt de votre dossier de CNI, avec suivi jusqu'au retrait.",
+  ),
+  ServiceSubOption(
+    id: 'cni_vip',
+    label: 'CNI — VIP',
+    price: 30000,
+    description: 'Traitement prioritaire de votre dossier de CNI et suivi personnalisé.',
+  ),
+  ServiceSubOption(
+    id: 'cni_super_vip',
+    label: 'CNI — Super VIP',
+    price: 50000,
+    description: 'Prise en charge complète et accélérée : nous gérons toutes les démarches de votre CNI.',
+  ),
+  ServiceSubOption(
+    id: 'passeport_classe_k',
+    label: 'Passeport — Classe K',
+    price: 125000,
+    description:
+        "Formule standard : constitution et dépôt de votre dossier de passeport, suivi jusqu'à la délivrance.",
+  ),
+  ServiceSubOption(
+    id: 'passeport_vip',
+    label: 'Passeport — VIP Pass',
+    price: 135000,
+    description: 'Traitement prioritaire de votre dossier de passeport et suivi personnalisé.',
+  ),
+  ServiceSubOption(
+    id: 'passeport_super_vip',
+    label: 'Passeport — Super VIP',
+    price: 150000,
+    description: 'Prise en charge complète et accélérée de votre passeport, du dossier au retrait.',
+  ),
 ];
+
+/// Formules du service « Certificat de police ».
+/// Doit rester identique à POLICE_OPTIONS côté web
+/// (mhd/src/lib/service-pricing.ts).
+const List<ServiceSubOption> policeOptions = [
+  ServiceSubOption(
+    id: 'simple',
+    label: 'Simple',
+    price: 20000,
+    description: "Demande de votre certificat de police et suivi jusqu'au retrait.",
+  ),
+  ServiceSubOption(
+    id: 'vip',
+    label: 'VIP',
+    price: 25000,
+    description: 'Traitement prioritaire de votre demande et suivi personnalisé.',
+  ),
+  ServiceSubOption(
+    id: 'super_vip',
+    label: 'Super VIP',
+    price: 40000,
+    description: 'Prise en charge complète et accélérée de votre certificat de police.',
+  ),
+  ServiceSubOption(
+    id: 'minrex',
+    label: 'Légalisation + MINREX',
+    price: 100000,
+    description:
+        "Certificat de police légalisé au Ministère des Relations Extérieures (MINREX), pour un usage à l'étranger.",
+  ),
+];
+
+/// Pièce toujours exigée pour un dossier BTS/Licence/…
+/// Doit rester identique à BTS_BASE_DOCUMENTS côté web.
+const List<String> btsBaseDocuments = ["Carte d'identité"];
+
+/// Pièces d'un dossier BTS : la base commune puis celles de l'école pour ce niveau.
+List<String> btsDocuments(Map<String, List<String>> docsParNiveau, String niveau) =>
+    {...btsBaseDocuments, ...(docsParNiveau[niveau] ?? const <String>[])}.toList();
 
 const List<String> _docsCni = [
   'Acte de naissance',

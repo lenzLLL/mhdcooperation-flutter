@@ -24,7 +24,7 @@ class SplashView extends GetView<SplashController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Logo with pulse animation
-              _buildAnimatedLogo(),
+              _buildAnimatedLogo(isDarkMode),
 
               const SizedBox(height: 40),
 
@@ -47,7 +47,7 @@ class SplashView extends GetView<SplashController> {
     );
   }
 
-  Widget _buildAnimatedLogo() {
+  Widget _buildAnimatedLogo(bool isDarkMode) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: const Duration(milliseconds: 1500),
@@ -56,10 +56,13 @@ class SplashView extends GetView<SplashController> {
         return Transform.scale(
           scale: value,
           child: Container(
-            width: 180,
-            height: 180,
-            padding: const EdgeInsets.all(20),
-            child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
+            width: 280,
+            height: 130,
+            padding: const EdgeInsets.all(12),
+            child: Image.asset(
+              isDarkMode ? 'assets/images/logo-white.png' : 'assets/images/logo.png',
+              fit: BoxFit.contain,
+            ),
           ),
         );
       },
