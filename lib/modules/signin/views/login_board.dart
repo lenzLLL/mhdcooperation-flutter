@@ -101,6 +101,8 @@ class _LoginBoardState extends State<LoginBoard>
               if (email.isEmpty) return;
               Navigator.of(ctx).pop();
               try {
+                // E-mail de réinitialisation en français (sinon langue par défaut du projet).
+                await FirebaseAuth.instance.setLanguageCode('fr');
                 await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
                 Get.snackbar(
                   'Email envoyé ✅',
