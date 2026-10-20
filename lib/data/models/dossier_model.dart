@@ -76,6 +76,10 @@ class DossierModel {
   final String itemType;
   final DateTime dateDeDepot;
   final double? amount;
+  /// Prix avant remise : renseigné seulement quand un code promo est appliqué.
+  final double? originalAmount;
+  final String? promoCode;
+  final int? promoPercent;
   final String? gateway;
   final String status;
   final String? messages;
@@ -99,6 +103,9 @@ class DossierModel {
     required this.itemType,
     required this.dateDeDepot,
     this.amount,
+    this.originalAmount,
+    this.promoCode,
+    this.promoPercent,
     this.gateway,
     required this.status,
     this.messages,
@@ -129,6 +136,11 @@ class DossierModel {
       amount: json['amount'] != null
           ? double.tryParse(json['amount'].toString())
           : null,
+      originalAmount: json['original_amount'] != null
+          ? double.tryParse(json['original_amount'].toString())
+          : null,
+      promoCode: json['promo_code']?.toString(),
+      promoPercent: json['promo_percent'] is num ? (json['promo_percent'] as num).toInt() : null,
       gateway: json['gateway'],
       status: json['status'] ?? 'pending',
       messages: json['messages'],
@@ -187,6 +199,9 @@ class DossierModel {
       'item_type': itemType,
       'date_de_depot': dateDeDepot.toIso8601String(),
       'amount': amount,
+      if (originalAmount != null) 'original_amount': originalAmount,
+      if (promoCode != null) 'promo_code': promoCode,
+      if (promoPercent != null) 'promo_percent': promoPercent,
       'gateway': gateway,
       'status': status,
       'messages': messages,

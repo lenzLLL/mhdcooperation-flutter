@@ -23,6 +23,8 @@ import 'package:mhdcooperation/modules/all_schools/views/all_schools_view.dart';
 import 'package:mhdcooperation/modules/profile/views/profile_view.dart';
 import 'package:mhdcooperation/widgets/icon_text_row.dart';
 import '../controllers/main_layout_controller.dart';
+import 'package:mhdcooperation/modules/admin_promos/bindings/admin_promos_binding.dart';
+import 'package:mhdcooperation/modules/admin_promos/views/admin_promos_view.dart';
 
 class MainLayoutView extends GetView<MainLayoutController> {
   const MainLayoutView({super.key});
@@ -262,6 +264,17 @@ class MainLayoutView extends GetView<MainLayoutController> {
                               Get.to(
                                 () => const AdminConcoursView(),
                                 binding: AdminConcoursBinding(),
+                              );
+                              controller.closeDrawer();
+                            },
+                          ),
+                          IconTextRow(
+                            title: "Codes promo",
+                            icon: Icons.local_offer,
+                            onTap: () {
+                              Get.to(
+                                () => const AdminPromosView(),
+                                binding: AdminPromosBinding(),
                               );
                               controller.closeDrawer();
                             },

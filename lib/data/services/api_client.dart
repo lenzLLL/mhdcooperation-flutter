@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 /// Appelle l'API MhD (Next.js) en s'authentifiant avec le jeton Firebase de
 /// l'utilisateur courant. Le mobile n'écrit plus dans Firestore : le serveur
@@ -27,6 +29,57 @@ class ApiClient {
     if (res.statusCode >= 400) {
       // L'API relaie le message de K-Pay : le remonter tel quel, sinon
       // l'utilisateur ne sait pas quoi corriger.
+      throw ApiException(decoded['error']?.toString() ?? 'Une erreur est survenue.');
+    }
+    return decoded;
+  }
+
+  Future<Map<String, dynamic>> patch(String path, Map<String, dynamic> body) async {
+    final res = await http.patch(
+      Uri.parse('$_baseUrl$path'),
+      headers: await _headers(),
+      body: jsonEncode(body),
+    );
+    final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode >= 400) {
+      throw ApiException(decoded['error']?.toString() ?? 'Une erreur est survenue.');
+    }
+    return decoded;
+  }
+
+  Future<Map<String, dynamic>> delete(String path) async {
+    final res = await http.delete(Uri.parse('$_baseUrl$path'), headers: await _headers());
+    final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode >= 400) {
+      throw ApiException(decoded['error']?.toString() ?? 'Une erreur est survenue.');
+    }
+    return decoded;
+  }
+
+  /// Envoi d'un fichier en multipart (champ `file`), avec son type MIME : le
+  /// serveur refuse tout format qui n'est pas explicitement autorisé.
+  Future<Map<String, dynamic>> postFile(
+    String path, {
+    required File file,
+    required String contentType,
+    Map<String, String> fields = const {},
+  }) async {
+    final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl$path'))
+      ..headers.addAll(await _headers())
+      ..fields.addAll(fields)
+      ..files.add(await http.MultipartFile.fromPath(
+        'file',
+        file.path,
+        contentType: MediaType.parse(contentType),
+      ));
+    // Le Content-Type JSON des autres appels écraserait la frontière multipart.
+    request.headers.remove('Content-Type');
+    final res = await http.Response.fromStream(await request.send());
+    if (res.statusCode == 413) {
+      throw ApiException('Le fichier dépasse la taille maximale de 4 Mo.');
+    }
+    final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode >= 400) {
       throw ApiException(decoded['error']?.toString() ?? 'Une erreur est survenue.');
     }
     return decoded;

@@ -20,6 +20,12 @@ class PaymentView extends StatefulWidget {
   // retombe sur son prix de base par défaut, indépendant de ce qui a été
   // choisi. `amount` ci-dessus ne sert qu'à l'affichage.
   final Map<String, dynamic>? selection;
+  /// Dossier déjà créé (reprise d'un paiement depuis le détail du dossier) :
+  /// `amount` est alors son prix d'origine, avant tout code promo.
+  final String? dossierId;
+  /// Code promo déjà appliqué à ce dossier (par exemple depuis le site).
+  final String? promoCode;
+  final int? promoPercent;
 
   const PaymentView({
     super.key,
@@ -33,6 +39,9 @@ class PaymentView extends StatefulWidget {
     this.quartier,
     this.requiredDocuments = const [],
     this.selection,
+    this.dossierId,
+    this.promoCode,
+    this.promoPercent,
   });
 
   @override
@@ -47,6 +56,24 @@ class _PaymentViewState extends State<PaymentView> {
   // (mauvais numéro, solde insuffisant) et que l'utilisateur retente, on ne
   // recrée pas un second dossier pour le même achat.
   String? _dossierId;
+
+  // Code promo : vérifié par le serveur pour l'affichage, puis appliqué au
+  // dossier au moment de payer — c'est alors le serveur qui fixe le prix.
+  final TextEditingController _promoController = TextEditingController();
+  String? _promoCode;
+  int? _promoPercent;
+  // Code actuellement enregistré sur le dossier côté serveur.
+  String? _serverPromoCode;
+  String? _promoError;
+  bool _checkingPromo = false;
+
+  /// Même règle que discountedAmount côté web : sous 100 FCFA (minimum de
+  /// l'opérateur) le dossier devient gratuit.
+  double get _payable {
+    if (_promoPercent == null) return widget.amount;
+    final value = (widget.amount * (100 - _promoPercent!) / 100).roundToDouble();
+    return value < 100 ? 0 : value;
+  }
 
   void _autoDetectOperator(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
@@ -65,12 +92,48 @@ class _PaymentViewState extends State<PaymentView> {
     final sessionService = Get.find<SessionService>();
     final phone = sessionService.currentUser.value?.phoneNumber;
     if (phone != null) _phoneController.text = phone;
+    _dossierId = widget.dossierId;
+    _promoCode = widget.promoCode;
+    _promoPercent = widget.promoPercent;
+    _serverPromoCode = widget.promoCode;
   }
 
   @override
   void dispose() {
     _phoneController.dispose();
+    _promoController.dispose();
     super.dispose();
+  }
+
+  Future<void> _applyPromo() async {
+    final code = _promoController.text.trim();
+    if (code.length < 3) return;
+    if (!Get.find<SessionService>().isAuthenticated.value) {
+      setState(() => _promoError = 'Connectez-vous pour utiliser un code promo.');
+      return;
+    }
+    setState(() {
+      _checkingPromo = true;
+      _promoError = null;
+    });
+    try {
+      final res = await ApiClient().post('/api/promos/verifier', {
+        'code': code,
+        'itemType': widget.type,
+        if (widget.serviceId != null) 'serviceId': widget.serviceId,
+      });
+      if (!mounted) return;
+      setState(() {
+        _promoCode = res['code'] as String;
+        _promoPercent = (res['percent'] as num).toInt();
+      });
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _promoError = e.message);
+    } catch (_) {
+      if (mounted) setState(() => _promoError = 'Impossible de vérifier le code.');
+    } finally {
+      if (mounted) setState(() => _checkingPromo = false);
+    }
   }
 
   Future<void> _submitPayment() async {
@@ -87,13 +150,13 @@ class _PaymentViewState extends State<PaymentView> {
     // Vérification locale sommaire avant tout appel réseau ; le serveur reste
     // l'autorité (validateCameroonPhone), qui accepte une fourchette large
     // plutôt qu'un format strict pour ne jamais bloquer à tort un vrai client.
-    if (widget.amount > 0 && phone.replaceAll(RegExp(r'\D'), '').length < 8) {
+    if (_payable > 0 && phone.replaceAll(RegExp(r'\D'), '').length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez saisir un numéro de téléphone valide.')),
       );
       return;
     }
-    if (widget.amount > 0 && _selectedOperator == null) {
+    if (_payable > 0 && _selectedOperator == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez sélectionner un opérateur mobile.')),
       );
@@ -123,13 +186,24 @@ class _PaymentViewState extends State<PaymentView> {
       }
       _dossierId = dossierId;
 
+      // Le serveur applique (ou retire) le code et recalcule le prix ; un code
+      // devenu invalide lève une erreur affichée et rien n'est payé.
+      if (_promoCode != _serverPromoCode) {
+        if (_promoCode != null) {
+          await api.post('/api/dossiers/$dossierId/promo', {'code': _promoCode});
+        } else {
+          await api.delete('/api/dossiers/$dossierId/promo');
+        }
+        _serverPromoCode = _promoCode;
+      }
+
       if (widget.amount > 0) {
         // Le montant affiché a pu être modifié par l'admin depuis l'ouverture
         // de l'écran. On relit le dossier avant de déclencher le débit : si le
         // prix a changé, on n'engage rien et on prévient l'utilisateur.
         final fresh = await api.get('/api/dossiers/$dossierId');
         final freshAmount = (fresh['dossier']?['amount'] as num?)?.toDouble();
-        if (freshAmount != null && freshAmount != widget.amount) {
+        if (freshAmount != null && freshAmount != _payable) {
           if (!mounted) return;
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -147,18 +221,28 @@ class _PaymentViewState extends State<PaymentView> {
           return;
         }
 
-        final operator = _selectedOperator == 'MTN' ? 'MTN_MOMO_CMR' : 'ORANGE_CMR';
-        await api.post('/api/dossiers/$dossierId/paiement', {
-          'operator': operator,
-          'phoneNumber': phone,
-        });
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Validez la demande de paiement sur votre téléphone.'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (_payable > 0) {
+          final operator = _selectedOperator == 'MTN' ? 'MTN_MOMO_CMR' : 'ORANGE_CMR';
+          await api.post('/api/dossiers/$dossierId/paiement', {
+            'operator': operator,
+            'phoneNumber': phone,
+          });
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Validez la demande de paiement sur votre téléphone.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Code promo appliqué : votre dossier est gratuit.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       }
 
       if (!mounted) return;
@@ -189,7 +273,9 @@ class _PaymentViewState extends State<PaymentView> {
 
   @override
   Widget build(BuildContext context) {
-    final isFree = widget.amount <= 0;
+    // Rien à payer : dossier gratuit d'origine, ou grâce au code promo.
+    final payable = _payable;
+    final isFree = payable <= 0;
     final itemType = widget.type == 'concours' ? 'Concours' : 'Service';
 
     return Scaffold(
@@ -263,9 +349,18 @@ class _PaymentViewState extends State<PaymentView> {
                                   style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 11),
                                 ),
                                 Text(
-                                  isFree ? 'Gratuit' : '${widget.amount.toStringAsFixed(0)} FCFA',
+                                  isFree ? 'Gratuit' : '${payable.toStringAsFixed(0)} FCFA',
                                   style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                                 ),
+                                if (_promoCode != null)
+                                  Text(
+                                    '${widget.amount.toStringAsFixed(0)} FCFA · code $_promoCode (-$_promoPercent %)',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.8),
+                                      fontSize: 12,
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
@@ -374,6 +469,11 @@ class _PaymentViewState extends State<PaymentView> {
                     ),
                   ],
 
+                  if (widget.amount > 0) ...[
+                    const SizedBox(height: 16),
+                    _buildPromoCard(),
+                  ],
+
                   const SizedBox(height: 28),
                   SizedBox(
                     width: double.infinity,
@@ -409,6 +509,88 @@ class _PaymentViewState extends State<PaymentView> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromoCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 12, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Code promo', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary)),
+          const SizedBox(height: 12),
+          if (_promoCode != null)
+            Row(
+              children: [
+                const Icon(Icons.local_offer_rounded, color: Color(0xFF10B981), size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '$_promoCode appliqué : -$_promoPercent %',
+                    style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF10B981)),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () => setState(() {
+                            _promoCode = null;
+                            _promoPercent = null;
+                            _promoController.clear();
+                          }),
+                  child: const Text('Retirer'),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _promoController,
+                    textCapitalization: TextCapitalization.characters,
+                    cursorColor: AppColors.primary,
+                    decoration: InputDecoration(
+                      hintText: 'Ex. RENTREE10',
+                      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
+                      prefixIcon: const Icon(Icons.local_offer_outlined, color: AppColors.secondary, size: 20),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE8EFF8))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE8EFF8), width: 1.5)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _checkingPromo || _isLoading ? null : _applyPromo,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: _checkingPromo
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Appliquer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          if (_promoError != null) ...[
+            const SizedBox(height: 8),
+            Text(_promoError!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+          ],
         ],
       ),
     );

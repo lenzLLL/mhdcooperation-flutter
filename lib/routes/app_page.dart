@@ -127,6 +127,9 @@ class AppPages {
                   .toList() ??
               const [],
           selection: args?['selection'] as Map<String, dynamic>?,
+          dossierId: args?['dossierId'] as String?,
+          promoCode: args?['promoCode'] as String?,
+          promoPercent: args?['promoPercent'] as int?,
         );
       },
     ),

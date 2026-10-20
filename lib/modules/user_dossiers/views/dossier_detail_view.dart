@@ -167,6 +167,40 @@ class DossierDetailView extends GetView<DossierDetailController> {
                 ),
               ),
 
+              // Dossier en attente de paiement (paiement refusé, abandonné…) :
+              // le client peut le reprendre ici, avec un code promo s'il en a un.
+              if (current.status.toLowerCase() == 'pending' &&
+                  (current.amount ?? 0) > 0 &&
+                  current.userId == Get.find<SessionService>().currentUser.value?.id)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => Get.toNamed(AppRoutes.payment, arguments: {
+                        'type': current.itemType,
+                        'itemId': current.serviceId ?? current.concoursId ?? '',
+                        'itemTitle': current.itemTitle ?? '',
+                        // Prix d'origine : la remise éventuelle est réappliquée à l'écran.
+                        'amount': current.originalAmount ?? current.amount,
+                        'serviceId': current.serviceId,
+                        'concoursId': current.concoursId,
+                        'dossierId': current.id,
+                        'promoCode': current.promoCode,
+                        'promoPercent': current.promoPercent,
+                      }),
+                      icon: const Icon(Icons.payments_rounded, size: 18),
+                      label: Text('Payer ${(current.amount ?? 0).toStringAsFixed(0)} FCFA'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
+                  ),
+                ),
+
               // Reçu de versement : téléchargé automatiquement dès le paiement,
               // puis disponible à tout moment.
               if (current.status.toLowerCase() != 'pending')

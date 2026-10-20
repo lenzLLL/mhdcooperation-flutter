@@ -1,14 +1,36 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mhdcooperation/core/values/app_colors.dart';
+import 'package:mhdcooperation/data/services/api_client.dart';
 import 'package:mhdcooperation/routes/app_routes.dart';
 import 'package:path/path.dart' as path;
 
+/// Limite du serveur (Vercel refuse les requêtes de plus de 4,5 Mo).
+const _maxBytes = 4 * 1024 * 1024;
+
+/// Formats acceptés par le serveur, par extension.
+const _mimeByExtension = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.pdf': 'application/pdf',
+};
+
+class _TrackedDocument {
+  final String name;
+  final String status;
+  final String? rejectionReason;
+
+  const _TrackedDocument(this.name, this.status, this.rejectionReason);
+}
+
+/// Dépôt des pièces, une par une : chaque fichier est rattaché à la pièce
+/// demandée via l'API (même route que le site), qui contrôle le format et met
+/// à jour son statut — c'est ce que l'administration examine.
 class DocumentUploadView extends StatefulWidget {
   final String dossierId;
   final String? serviceId;
@@ -30,127 +52,134 @@ class DocumentUploadView extends StatefulWidget {
 }
 
 class _DocumentUploadViewState extends State<DocumentUploadView> {
-  final List<File> _selectedFiles = [];
-  bool _isUploading = false;
-  int _uploadProgress = 0;
-  bool _done = false;
+  final _api = ApiClient();
+  List<_TrackedDocument>? _documents;
+  String? _loadError;
+  // Pièce en cours d'envoi (une à la fois).
+  String? _uploading;
 
-  Future<void> _pickFromCamera() async {
-    final picker = ImagePicker();
-    final picked =
-        await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
-    if (picked != null && mounted) {
-      const maxBytes = 10 * 1024 * 1024;
-      final file = File(picked.path);
-      if (file.lengthSync() > maxBytes) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Image trop volumineuse (> 10 Mo)'),
-            backgroundColor: Colors.orange,
-          ));
-        }
-        return;
-      }
-      setState(() => _selectedFiles.add(file));
-    }
+  @override
+  void initState() {
+    super.initState();
+    _load();
   }
 
-  Future<void> _pickFromGallery() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickMultiImage(imageQuality: 85);
-    if (picked.isNotEmpty && mounted) {
-      const maxBytes = 10 * 1024 * 1024;
-      final all = picked.map((x) => File(x.path)).toList();
-      final valid = all.where((f) => f.lengthSync() <= maxBytes).toList();
-      final skipped = all.length - valid.length;
-      if (skipped > 0 && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('$skipped image(s) ignorée(s) (> 10 Mo)'),
-          backgroundColor: Colors.orange,
-        ));
-      }
-      if (valid.isNotEmpty) setState(() => _selectedFiles.addAll(valid));
-    }
-  }
-
-  Future<void> _pickFile() async {
-    final result = await FilePicker.pickFiles(
-      allowMultiple: true,
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-    );
-    if (result != null && mounted) {
-      const maxBytes = 10 * 1024 * 1024;
-      final oversized = result.files.where((f) => f.size > maxBytes).toList();
-      if (oversized.isNotEmpty && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${oversized.length} fichier(s) ignorés (> 10 Mo)'),
-          backgroundColor: Colors.orange,
-        ));
-      }
-      final valid = result.files
-          .where((f) => f.size <= maxBytes && f.path != null)
-          .toList();
-      if (valid.isEmpty) return;
-      setState(() {
-        for (final f in valid) {
-          _selectedFiles.add(File(f.path!));
-        }
-      });
-    }
-  }
-
-  Future<void> _uploadDocuments() async {
-    if (_selectedFiles.isEmpty) return;
-    setState(() {
-      _isUploading = true;
-      _uploadProgress = 0;
-    });
+  Future<void> _load() async {
     try {
-      final storage = FirebaseStorage.instance;
-      final firestore = FirebaseFirestore.instance;
-      final urls = <String>[];
-
-      for (int i = 0; i < _selectedFiles.length; i++) {
-        final file = _selectedFiles[i];
-        final fileName =
-            '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
-        final ref = storage
-            .ref('dossiers/${widget.dossierId}/documents/$fileName');
-        await ref.putFile(file);
-        final url = await ref.getDownloadURL();
-        urls.add(url);
-        if (mounted) setState(() => _uploadProgress = i + 1);
-      }
-
-      await firestore.collection('dossiers').doc(widget.dossierId).update({
-        'documents': FieldValue.arrayUnion(urls),
-        'updated_at': FieldValue.serverTimestamp(),
+      final res = await _api.get('/api/dossiers/${widget.dossierId}');
+      final tracking = (res['dossier']?['documentsTracking'] as List<dynamic>? ?? [])
+          .map((e) => e as Map<String, dynamic>)
+          .map((d) => _TrackedDocument(
+                d['name']?.toString() ?? '',
+                d['status']?.toString() ?? 'pending',
+                d['rejectionReason']?.toString(),
+              ))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _documents = tracking.isNotEmpty
+            ? tracking
+            : widget.requiredDocuments.map((n) => _TrackedDocument(n, 'pending', null)).toList();
+        _loadError = null;
       });
-
-      if (mounted) setState(() => _done = true);
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) Get.offAllNamed(AppRoutes.userDossiers);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de l\'envoi: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isUploading = false);
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _loadError = e.message);
+    } catch (_) {
+      if (mounted) setState(() => _loadError = 'Impossible de charger les pièces du dossier.');
     }
   }
 
-  void _skip() => Get.offAllNamed(AppRoutes.userDossiers);
+  void _snack(String message, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+  }
 
-  bool _isPdf(File file) => file.path.toLowerCase().endsWith('.pdf');
+  Future<File?> _pick() async {
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_rounded),
+              title: const Text('Prendre une photo'),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded),
+              title: const Text('Choisir dans la galerie'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.attach_file_rounded),
+              title: const Text('Choisir un fichier (PDF, image)'),
+              onTap: () => Navigator.pop(ctx, 'file'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return null;
+    if (source == 'file') {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+      );
+      final p = result?.files.single.path;
+      return p == null ? null : File(p);
+    }
+    // Photos réduites et compressées : une photo de téléphone brute dépasse
+    // souvent la limite du serveur, et reste lisible à 2000 px.
+    final picked = await ImagePicker().pickImage(
+      source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 2000,
+      maxHeight: 2000,
+    );
+    return picked == null ? null : File(picked.path);
+  }
+
+  Future<void> _upload(_TrackedDocument doc) async {
+    final file = await _pick();
+    if (file == null) return;
+    final mime = _mimeByExtension[path.extension(file.path).toLowerCase()];
+    if (mime == null) {
+      _snack('Format non autorisé. Formats acceptés : JPG, PNG, WEBP, PDF.', Colors.orange);
+      return;
+    }
+    if (await file.length() > _maxBytes) {
+      _snack('Le fichier dépasse la taille maximale de 4 Mo.', Colors.orange);
+      return;
+    }
+    setState(() => _uploading = doc.name);
+    try {
+      await _api.postFile(
+        '/api/dossiers/${widget.dossierId}/documents',
+        file: file,
+        contentType: mime,
+        fields: {'documentName': doc.name},
+      );
+      _snack('« ${doc.name} » envoyé.', Colors.green);
+      await _load();
+    } on ApiException catch (e) {
+      _snack(e.message, Colors.red);
+    } catch (_) {
+      _snack('Échec de l\'envoi. Vérifiez votre connexion et réessayez.', Colors.red);
+    } finally {
+      if (mounted) setState(() => _uploading = null);
+    }
+  }
+
+  void _finish() {
+    Get.offAllNamed(AppRoutes.userDossiers);
+    Get.toNamed(AppRoutes.dossierDetail, arguments: {'dossierId': widget.dossierId});
+  }
 
   @override
   Widget build(BuildContext context) {
+    final docs = _documents;
+    final sent = docs?.where((d) => d.status != 'pending' && d.status != 'rejected').length ?? 0;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
@@ -165,70 +194,33 @@ class _DocumentUploadViewState extends State<DocumentUploadView> {
             ),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-                child: Column(
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 24),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.check_rounded,
-                              color: Colors.white, size: 24),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Dossier créé avec succès !',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.itemTitle,
-                                style: TextStyle(
-                                    color:
-                                        Colors.white.withValues(alpha: 0.85),
-                                    fontSize: 13),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    IconButton(
+                      onPressed: _uploading == null ? _finish : null,
+                      icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
                     ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25)),
-                      ),
-                      child: const Row(
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.info_outline_rounded,
-                              color: Colors.white, size: 18),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Pour accélérer le traitement de votre dossier, envoyez vos documents dès maintenant. Vous pouvez aussi le faire plus tard depuis "Mes dossiers".',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  height: 1.5),
-                            ),
+                          const Text(
+                            'Pièces du dossier',
+                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                           ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.itemTitle,
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (docs != null && docs.isNotEmpty)
+                            Text(
+                              '$sent / ${docs.length} pièce(s) envoyée(s)',
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12),
+                            ),
                         ],
                       ),
                     ),
@@ -238,286 +230,100 @@ class _DocumentUploadViewState extends State<DocumentUploadView> {
             ),
           ),
           Expanded(
-            child: _done
-                ? _buildDoneWidget()
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (widget.requiredDocuments.isNotEmpty) ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            margin: const EdgeInsets.only(bottom: 20),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFD1E8FF)),
-                              boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 8, offset: const Offset(0, 3))],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Row(children: [
-                                  Icon(Icons.checklist_rounded, size: 16, color: AppColors.primary),
-                                  SizedBox(width: 6),
-                                  Text('Documents requis', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
-                                ]),
-                                const SizedBox(height: 10),
-                                ...widget.requiredDocuments.map((doc) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: Row(children: [
-                                    const Icon(Icons.radio_button_unchecked, size: 14, color: AppColors.secondary),
-                                    const SizedBox(width: 8),
-                                    Expanded(child: Text(doc, style: const TextStyle(fontSize: 13))),
-                                  ]),
-                                )),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Vous pouvez compléter ces documents maintenant ou depuis votre dossier plus tard.',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey[500], height: 1.4),
-                                ),
-                              ],
-                            ),
-                          ),
+            child: _loadError != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_loadError!, textAlign: TextAlign.center),
+                          TextButton(onPressed: _load, child: const Text('Réessayer')),
                         ],
-                        Row(
-                          children: [
-                            Expanded(
-                                child: _pickButton(Icons.camera_alt_rounded,
-                                    'Appareil\nphoto', _pickFromCamera)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                                child: _pickButton(Icons.photo_library_rounded,
-                                    'Galerie', _pickFromGallery)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                                child: _pickButton(Icons.attach_file_rounded,
-                                    'Fichier\nPDF', _pickFile)),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        if (_selectedFiles.isNotEmpty) ...[
-                          Text(
-                            '${_selectedFiles.length} document(s) sélectionné(s)',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 14),
-                          ),
-                          const SizedBox(height: 12),
-                          ...List.generate(
-                              _selectedFiles.length,
-                              (i) => _fileCard(_selectedFiles[i], i)),
-                          const SizedBox(height: 24),
-                          if (_isUploading)
-                            Center(
-                              child: Column(
-                                children: [
-                                  const CircularProgressIndicator(
-                                      color: AppColors.primary),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'Envoi $_uploadProgress/${_selectedFiles.length}...',
-                                    style: const TextStyle(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                            )
-                          else
-                            SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: AppColors.brandGradient,
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: [
-                                    BoxShadow(
-                                        color: AppColors.primary
-                                            .withValues(alpha: 0.3),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 5))
-                                  ],
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: _uploadDocuments,
-                                  icon: const Icon(
-                                      Icons.cloud_upload_rounded,
-                                      color: Colors.white),
-                                  label: const Text('Envoyer les documents',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold)),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(14)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ] else
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(32),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                    color: AppColors.shadow,
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4))
-                              ],
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(Icons.upload_file_rounded,
-                                    size: 64, color: Colors.grey[300]),
-                                const SizedBox(height: 12),
-                                Text('Aucun document sélectionné',
-                                    style: TextStyle(
-                                        color: Colors.grey[500], fontSize: 14)),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Utilisez les boutons ci-dessus pour ajouter vos documents',
-                                  style: TextStyle(
-                                      color: Colors.grey[400], fontSize: 12),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: TextButton(
-                            onPressed: _skip,
-                            child: Text(
-                              'Ignorer pour l\'instant',
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 14),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                  )
+                : docs == null
+                    ? const Center(child: CircularProgressIndicator())
+                    : docs.isEmpty
+                        ? const Center(child: Text('Aucune pièce demandée pour ce dossier.'))
+                        : RefreshIndicator(
+                            onRefresh: _load,
+                            child: ListView(
+                              padding: const EdgeInsets.all(20),
+                              children: [
+                                Text(
+                                  'Formats acceptés : JPG, PNG, WEBP ou PDF, 4 Mo maximum par fichier.',
+                                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                ),
+                                const SizedBox(height: 14),
+                                ...docs.map(_documentCard),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: ElevatedButton(
+                                    onPressed: _uploading == null ? _finish : null,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                    ),
+                                    child: const Text(
+                                      'Terminer',
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
           ),
         ],
       ),
     );
   }
 
-  Widget _pickButton(IconData icon, String label, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-                color: AppColors.shadow,
-                blurRadius: 8,
-                offset: const Offset(0, 3))
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: AppColors.secondary, size: 26),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _fileCard(File file, int index) {
-    final isPdf = _isPdf(file);
+  Widget _documentCard(_TrackedDocument doc) {
+    final (String label, Color color, IconData icon) = switch (doc.status) {
+      'uploaded' => ('Envoyé', AppColors.secondary, Icons.schedule_rounded),
+      'validated' => ('Validé', const Color(0xFF10B981), Icons.check_circle_rounded),
+      'rejected' => ('À revoir', Colors.red, Icons.error_rounded),
+      _ => ('À fournir', Colors.grey, Icons.radio_button_unchecked),
+    };
+    final busy = _uploading == doc.name;
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 8,
-              offset: const Offset(0, 2))
-        ],
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 8, offset: const Offset(0, 3))],
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: isPdf
-                ? Container(
-                    width: 48,
-                    height: 48,
-                    color: Colors.red.shade50,
-                    child: const Icon(Icons.picture_as_pdf_rounded,
-                        color: Colors.red, size: 28),
-                  )
-                : Image.file(file, width: 48, height: 48, fit: BoxFit.cover),
-          ),
+          Icon(icon, color: color, size: 22),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              path.basename(file.path),
-              style:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(doc.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                Text(label, style: TextStyle(color: color, fontSize: 12)),
+                if (doc.status == 'rejected' && doc.rejectionReason != null)
+                  Text(
+                    'Motif : ${doc.rejectionReason}',
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+              ],
             ),
           ),
-          IconButton(
-            onPressed: () =>
-                setState(() => _selectedFiles.removeAt(index)),
-            icon:
-                const Icon(Icons.close_rounded, color: Colors.red, size: 20),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDoneWidget() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.check_circle_rounded,
-                color: Color(0xFF10B981), size: 64),
-          ),
-          const SizedBox(height: 20),
-          const Text('Documents envoyés !',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary)),
-          const SizedBox(height: 8),
-          Text('Redirection en cours...',
-              style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+          if (doc.status != 'validated')
+            busy
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5))
+                : TextButton(
+                    onPressed: _uploading == null ? () => _upload(doc) : null,
+                    child: Text(doc.status == 'pending' ? 'Envoyer' : 'Remplacer'),
+                  ),
         ],
       ),
     );
