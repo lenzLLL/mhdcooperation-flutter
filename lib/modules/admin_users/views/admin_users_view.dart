@@ -286,7 +286,7 @@ class AdminUsersView extends GetView<AdminUsersController> {
                                   ],
                                 ),
                               ),
-                              if (user['role'] == 'user' && _isSadmin) ...[
+                              if (user['role'] == 'user') ...[
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -330,8 +330,10 @@ class AdminUsersView extends GetView<AdminUsersController> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: ElevatedButton(
-                                  onPressed: () =>
-                                      controller.toggleUserStatus(user['id']),
+                                  // Un super-admin n'est désactivable que par un super-admin.
+                                  onPressed: user['role'] == 'sadmin' && !_isSadmin
+                                      ? null
+                                      : () => controller.toggleUserStatus(user['id']),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: user['status'] == 'active'
                                         ? Colors.red

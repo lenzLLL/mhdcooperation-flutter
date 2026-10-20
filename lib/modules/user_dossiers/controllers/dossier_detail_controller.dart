@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
 import 'package:mhdcooperation/data/models/dossier_message.dart';
 import 'package:mhdcooperation/data/models/dossier_model.dart';
+import 'package:mhdcooperation/data/services/api_client.dart';
 import 'package:mhdcooperation/data/services/recu_service.dart';
 import 'package:mhdcooperation/data/services/session_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -262,13 +263,11 @@ class DossierDetailController extends GetxController {
     if (d == null) return;
 
     try {
-      final currentUser = _session.currentUser.value;
-      await _firestore.collection('dossiers').doc(d.id).update({
-        'status': status,
-        'updated_at': FieldValue.serverTimestamp(),
-        'last_updated_by_role': currentUser?.role.toUpperCase() ?? 'ADMIN',
-      });
+      // Via l'API web : contrôle du rôle admin et inscription au journal d'audit.
+      await ApiClient().patch('/api/admin/dossiers/${d.id}', {'status': status});
       dossier.value = d.copyWith(status: status);
+    } on ApiException catch (e) {
+      Get.showSnackbar(GetSnackBar(title: 'Erreur', message: e.message, duration: const Duration(seconds: 3)));
     } catch (e) {
       Get.showSnackbar(
         GetSnackBar(

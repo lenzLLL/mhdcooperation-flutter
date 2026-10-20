@@ -71,7 +71,7 @@ class AdminMetricsView extends GetView<AdminMetricsController> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  if (_isSadmin) ...[
+                  ...[
                     Expanded(
                       child: _buildMetricCard(
                         'Revenus',
@@ -124,8 +124,8 @@ class AdminMetricsView extends GetView<AdminMetricsController> {
 
               const SizedBox(height: 32),
 
-              // Section revenus — SADMIN uniquement
-              if (_isSadmin) ...[
+              // Section revenus — visible de tous les admins
+              ...[
                 const Text(
                   'Revenus par Service',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),

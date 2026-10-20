@@ -12,6 +12,8 @@ final List<MapEntry<String, String>> promoScopeOptions = [
 ];
 
 String _two(int n) => n.toString().padLeft(2, '0');
+String _fcfa(double v) =>
+    '${v.round().toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]} ')} FCFA';
 String _date(DateTime d) => '${_two(d.day)}/${_two(d.month)}/${d.year}';
 
 class AdminPromosView extends GetView<AdminPromosController> {
@@ -68,12 +70,46 @@ class AdminPromosView extends GetView<AdminPromosController> {
           onRefresh: controller.load,
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-            itemCount: controller.promos.length,
+            itemCount: controller.promos.length + 1,
             separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (_, i) => _promoCard(context, controller.promos[i]),
+            itemBuilder: (_, i) =>
+                i == 0 ? _totals(controller.promos) : _promoCard(context, controller.promos[i - 1]),
           ),
         );
       }),
+    );
+  }
+
+  /// Totaux de tous les codes : encaissé (brut, avant commission K-Pay), remises, dossiers.
+  Widget _totals(List<PromoCode> promos) {
+    final revenue = promos.fold<double>(0, (sum, p) => sum + p.revenue);
+    final discounts = promos.fold<double>(0, (sum, p) => sum + p.discountTotal);
+    final uses = promos.fold<int>(0, (sum, p) => sum + p.uses);
+    Widget tile(String label, String value) => Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha(15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[700])),
+                const SizedBox(height: 4),
+                Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              ],
+            ),
+          ),
+        );
+    return Row(
+      children: [
+        tile('Encaissé', _fcfa(revenue)),
+        const SizedBox(width: 8),
+        tile('Remises', _fcfa(discounts)),
+        const SizedBox(width: 8),
+        tile('Dossiers', '$uses'),
+      ],
     );
   }
 
@@ -123,6 +159,11 @@ class AdminPromosView extends GetView<AdminPromosController> {
             '${promo.expiresAt != null ? 'expire le ${_date(promo.expiresAt!)}' : 'sans expiration'}'
             '${promo.oncePerUser ? ' · 1 fois par client' : ''}\n$scope',
             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Encaissé : ${_fcfa(promo.revenue)} · remises : ${_fcfa(promo.discountTotal)}',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,

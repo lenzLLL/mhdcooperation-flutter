@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mhdcooperation/data/models/ecoles.dart';
 import 'package:mhdcooperation/data/constants/villes_cameroun.dart';
-import 'package:mhdcooperation/data/services/session_service.dart';
 import '../controllers/admin_concours_controller.dart';
 import 'dart:io';
 
@@ -97,19 +96,13 @@ class AdminConcoursView extends GetView<AdminConcoursController> {
                       ),
                       trailing: PopupMenuButton(
                         itemBuilder: (context) {
-                          final role = Get.find<SessionService>()
-                              .currentUser
-                              .value
-                              ?.role
-                              .toUpperCase();
                           return [
                             PopupMenuItem(
                               child: const Text('Modifier'),
                               onTap: () =>
                                   _showEditConcoursDialog(context, concours),
                             ),
-                            if (role == 'SADMIN')
-                              PopupMenuItem(
+                            PopupMenuItem(
                                 child: const Text(
                                   'Supprimer',
                                   style: TextStyle(color: Colors.red),

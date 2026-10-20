@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/data/services/api_client.dart';
 
 class AdminUsersController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -171,14 +172,12 @@ class AdminUsersController extends GetxController {
     if (userIndex == -1) return;
     final bool disable = users[userIndex]['status'] == 'active';
     try {
-      // Persistance réelle : `disabled` est le champ lu par la version web,
-      // `status` reste écrit pour les anciens lecteurs.
-      await _firestore.collection('users').doc(userId).update({
-        'disabled': disable,
-        'status': disable ? 'inactive' : 'active',
-        'updated_at': FieldValue.serverTimestamp(),
-      });
+      // Via l'API web : elle inscrit l'action au journal d'audit et empêche un
+      // admin de désactiver un super-admin.
+      await ApiClient().patch('/api/admin/users/$userId', {'disabled': disable});
       _patchLocal(userId, {'status': disable ? 'inactive' : 'active'});
+    } on ApiException catch (e) {
+      Get.snackbar('Erreur', e.message, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
       Get.snackbar(
         'Erreur',
@@ -190,13 +189,12 @@ class AdminUsersController extends GetxController {
 
   Future<void> changeUserRole(String userId, String newRole) async {
     try {
-      // Rôle écrit en MAJUSCULES : convention du modèle (USER/ADMIN/SADMIN),
-      // également celle qu'écrit la version web.
-      await _firestore.collection('users').doc(userId).update({
-        'role': newRole.toUpperCase(),
-        'updated_at': FieldValue.serverTimestamp(),
-      });
+      // Via l'API web : journal d'audit, et seul un super-admin peut nommer ou
+      // retirer un super-admin.
+      await ApiClient().patch('/api/admin/users/$userId', {'role': newRole.toUpperCase()});
       _patchLocal(userId, {'role': newRole.toLowerCase()});
+    } on ApiException catch (e) {
+      Get.snackbar('Erreur', e.message, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
       Get.snackbar(
         'Erreur',

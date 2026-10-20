@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:mhdcooperation/data/models/concours.dart';
 import 'package:mhdcooperation/data/models/ecoles.dart';
+import 'package:mhdcooperation/data/services/audit_service.dart';
 import 'package:mhdcooperation/data/services/concours_service.dart';
 import 'dart:io';
 
@@ -58,7 +59,7 @@ class AdminConcoursController extends GetxController {
   }) async {
     try {
       isLoading.value = true;
-      await _concoursService.addConcours(
+      final id = await _concoursService.addConcours(
         title: title,
         description: description,
         schoolId: schoolId,
@@ -74,6 +75,7 @@ class AdminConcoursController extends GetxController {
         pdfFile: pdfFile,
         ville: ville,
       );
+      await AuditService.log('concours.create', id, title);
       await loadConcours();
     } catch (e) {
       errorMessage.value = 'Erreur lors de l\'ajout: $e';
@@ -119,6 +121,7 @@ class AdminConcoursController extends GetxController {
         pdfFile: pdfFile,
         ville: ville,
       );
+      await AuditService.log('concours.update', id, title);
       await loadConcours();
     } catch (e) {
       errorMessage.value = 'Erreur lors de la modification: $e';
@@ -131,7 +134,9 @@ class AdminConcoursController extends GetxController {
   Future<void> deleteConcours(String id) async {
     try {
       isLoading.value = true;
+      final title = concoursItems.firstWhereOrNull((c) => c.id == id)?.title ?? id;
       await _concoursService.deleteConcours(id);
+      await AuditService.log('concours.delete', id, title);
       await loadConcours();
     } catch (e) {
       errorMessage.value = 'Erreur lors de la suppression: $e';

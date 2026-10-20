@@ -3,17 +3,11 @@ import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mhdcooperation/data/models/ecoles.dart';
-import 'package:mhdcooperation/data/services/session_service.dart';
 import '../controllers/admin_schools_controller.dart';
 import 'dart:io';
 
 class AdminSchoolsView extends GetView<AdminSchoolsController> {
   const AdminSchoolsView({super.key});
-
-  bool get _isSadmin {
-    final user = Get.find<SessionService>().currentUser.value;
-    return user?.role.toUpperCase() == 'SADMIN';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,8 +119,7 @@ class AdminSchoolsView extends GetView<AdminSchoolsController> {
                             onTap: () =>
                                 _showEditSchoolDialog(context, school),
                           ),
-                          if (_isSadmin)
-                            PopupMenuItem(
+                          PopupMenuItem(
                               child: const Text(
                                 'Supprimer',
                                 style: TextStyle(color: Colors.red),

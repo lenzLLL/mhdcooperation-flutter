@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:mhdcooperation/data/models/ecoles.dart';
+import 'package:mhdcooperation/data/services/audit_service.dart';
 import 'package:mhdcooperation/data/services/school_service.dart';
 import 'dart:io';
 
@@ -51,7 +52,7 @@ class AdminSchoolsController extends GetxController {
   }) async {
     try {
       isLoading.value = true;
-      await _schoolService.addSchool(
+      final id = await _schoolService.addSchool(
         name: name,
         description: description,
         category: category,
@@ -61,6 +62,7 @@ class AdminSchoolsController extends GetxController {
         filieres: filieres,
         prixParNiveau: prixParNiveau,
       );
+      await AuditService.log('school.create', id, name);
       await loadSchools();
     } catch (e) {
       errorMessage.value = 'Erreur lors de l\'ajout: $e';
@@ -95,6 +97,7 @@ class AdminSchoolsController extends GetxController {
         filieres: filieres,
         prixParNiveau: prixParNiveau,
       );
+      await AuditService.log('school.update', id, name);
       await loadSchools();
     } catch (e) {
       errorMessage.value = 'Erreur lors de la modification: $e';
@@ -106,7 +109,9 @@ class AdminSchoolsController extends GetxController {
   Future<void> deleteSchool(String id) async {
     try {
       isLoading.value = true;
+      final name = schools.firstWhereOrNull((s) => s.id == id)?.name ?? id;
       await _schoolService.deleteSchool(id);
+      await AuditService.log('school.delete', id, name);
       await loadSchools();
     } catch (e) {
       errorMessage.value = 'Erreur lors de la suppression: $e';

@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:mhdcooperation/data/services/session_service.dart';
 import '../controllers/admin_dossiers_controller.dart';
 
 class AdminDossiersView extends GetView<AdminDossiersController> {
   const AdminDossiersView({super.key});
-
-  bool get _isSadmin {
-    final role = Get.find<SessionService>().currentUser.value?.role.toUpperCase();
-    return role == 'SADMIN';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -343,8 +337,7 @@ class AdminDossiersView extends GetView<AdminDossiersController> {
                               const SizedBox(height: 14),
                               Row(
                                 children: [
-                                  if (_isSadmin)
-                                    Expanded(
+                                  Expanded(
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
@@ -368,7 +361,7 @@ class AdminDossiersView extends GetView<AdminDossiersController> {
                                         ],
                                       ),
                                     ),
-                                  if (_isSadmin) const SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:

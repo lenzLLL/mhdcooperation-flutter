@@ -25,6 +25,7 @@ import 'package:mhdcooperation/widgets/icon_text_row.dart';
 import '../controllers/main_layout_controller.dart';
 import 'package:mhdcooperation/modules/admin_promos/bindings/admin_promos_binding.dart';
 import 'package:mhdcooperation/modules/admin_promos/views/admin_promos_view.dart';
+import 'package:mhdcooperation/modules/admin_journal/views/admin_journal_view.dart';
 
 class MainLayoutView extends GetView<MainLayoutController> {
   const MainLayoutView({super.key});
@@ -199,31 +200,28 @@ class MainLayoutView extends GetView<MainLayoutController> {
                             ),
                           ),
                           // Tableau de bord (revenus) : SADMIN uniquement
-                          if (isSadmin)
-                            IconTextRow(
-                              title: "Tableau de Bord",
-                              icon: Icons.dashboard,
-                              onTap: () {
-                                Get.to(
-                                  () => const AdminMetricsView(),
-                                  binding: AdminMetricsBinding(),
-                                );
-                                controller.closeDrawer();
-                              },
-                            ),
-                          // Transactions (données financières) : SADMIN uniquement
-                          if (isSadmin)
-                            IconTextRow(
-                              title: "Transactions",
-                              icon: Icons.receipt_long,
-                              onTap: () {
-                                Get.to(
-                                  () => const AdminTransactionsView(),
-                                  binding: AdminTransactionsBinding(),
-                                );
-                                controller.closeDrawer();
-                              },
-                            ),
+                          IconTextRow(
+                            title: "Tableau de Bord",
+                            icon: Icons.dashboard,
+                            onTap: () {
+                              Get.to(
+                                () => const AdminMetricsView(),
+                                binding: AdminMetricsBinding(),
+                              );
+                              controller.closeDrawer();
+                            },
+                          ),
+                          IconTextRow(
+                            title: "Transactions",
+                            icon: Icons.receipt_long,
+                            onTap: () {
+                              Get.to(
+                                () => const AdminTransactionsView(),
+                                binding: AdminTransactionsBinding(),
+                              );
+                              controller.closeDrawer();
+                            },
+                          ),
                           IconTextRow(
                             title: "Gestion Dossiers",
                             icon: Icons.folder_special,
@@ -268,6 +266,16 @@ class MainLayoutView extends GetView<MainLayoutController> {
                               controller.closeDrawer();
                             },
                           ),
+                          // Qui a fait quoi : réservé au super-admin.
+                          if (isSadmin)
+                            IconTextRow(
+                              title: "Journal d'audit",
+                              icon: Icons.history,
+                              onTap: () {
+                                Get.to(() => const AdminJournalView());
+                                controller.closeDrawer();
+                              },
+                            ),
                           IconTextRow(
                             title: "Codes promo",
                             icon: Icons.local_offer,
