@@ -32,7 +32,7 @@ class ProfileView extends GetView<ProfileController> {
       body: Obx(() {
         final user = controller.sessionService.currentUser.value;
         return RefreshIndicator(
-          onRefresh: () async {},
+          onRefresh: controller.loadPersonalPromo,
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -42,6 +42,10 @@ class ProfileView extends GetView<ProfileController> {
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
                   child: Column(
                     children: [
+                      if (controller.personalPromo.value != null) ...[
+                        _buildPersonalPromo(context, controller.personalPromo.value!),
+                        const SizedBox(height: 20),
+                      ],
                       _buildMenuSection(),
                       const SizedBox(height: 24),
                       _buildLogoutButton(),
@@ -191,6 +195,59 @@ class ProfileView extends GetView<ProfileController> {
       errorWidget: (_, _, _) => Container(
         color: Colors.white.withAlpha(51),
         child: const Icon(Icons.person, size: 52, color: Colors.white),
+      ),
+    );
+  }
+
+  /// Code promo personnel, à copier pour le saisir au moment de payer.
+  Widget _buildPersonalPromo(BuildContext context, Map<String, dynamic> promo) {
+    final code = promo['code']?.toString() ?? '';
+    final used = promo['used'] == true;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withAlpha(40)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.local_offer_rounded, color: AppColors.secondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Mon code promo', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 2),
+                Text(
+                  code,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                    decoration: used ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  used
+                      ? 'Code déjà utilisé'
+                      : '-${promo['percent']} % sur un dossier, à saisir au moment de payer',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+          if (!used)
+            TextButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: code));
+                Get.snackbar('Copié', 'Code $code copié', snackPosition: SnackPosition.BOTTOM);
+              },
+              child: const Text('Copier'),
+            ),
+        ],
       ),
     );
   }

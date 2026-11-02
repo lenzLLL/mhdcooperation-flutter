@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:mhdcooperation/data/models/user_model.dart';
+import 'package:mhdcooperation/data/services/api_client.dart';
 import 'package:mhdcooperation/data/services/push_notification_service.dart';
 import 'package:mhdcooperation/data/services/session_service.dart';
 
@@ -112,6 +114,12 @@ class AuthService extends GetxService {
 
       await _session.setCurrentUser(newUser);
       _savePushTokenAfterLogin(newUser.city);
+      // Code promo personnel, créé par le serveur. Sans attente : un échec ne
+      // doit pas bloquer l'inscription, il sera recréé à l'ouverture du profil.
+      unawaited(ApiClient().get('/api/users/me/promo').catchError((Object e) {
+        debugPrint('Code promo personnel non créé à l\'inscription : $e');
+        return <String, dynamic>{};
+      }));
     } catch (e, stackTrace) {
       debugPrint('signUp failed for email $email: $e');
       debugPrint(stackTrace.toString());

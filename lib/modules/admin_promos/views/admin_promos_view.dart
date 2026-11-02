@@ -55,36 +55,122 @@ class AdminPromosView extends GetView<AdminPromosController> {
         if (controller.error.value != null) {
           return Center(child: Text(controller.error.value!, textAlign: TextAlign.center));
         }
-        if (controller.promos.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Text(
-                'Aucun code promo.\nCréez-en un pour offrir une remise au moment du paiement.',
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
-        }
         return RefreshIndicator(
           onRefresh: controller.load,
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-            itemCount: controller.promos.length + 1,
+            itemCount: controller.promos.length + 2,
             separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (_, i) =>
-                i == 0 ? _totals(controller.promos) : _promoCard(context, controller.promos[i - 1]),
+            itemBuilder: (_, i) {
+              if (i == 0) return _welcomeCard(context);
+              if (i == 1) {
+                return controller.promos.isEmpty && controller.personalUsed.value == 0
+                    ? const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text(
+                          'Aucun code de campagne.\nCréez-en un pour offrir une remise au moment du paiement.',
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    : _totals(controller.promos);
+              }
+              return _promoCard(context, controller.promos[i - 2]);
+            },
           ),
         );
       }),
     );
   }
 
+  /// Code offert à chaque compte : réglage et bilan des codes personnels.
+  Widget _welcomeCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.grey.withAlpha(25), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text('Code de bienvenue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+              TextButton(onPressed: () => _editWelcome(context), child: const Text('Modifier')),
+            ],
+          ),
+          Text(
+            controller.welcomeEnabled.value
+                ? 'Chaque nouveau compte reçoit -${controller.welcomePercent.value} %, utilisable une fois.'
+                : 'Désactivé : les nouveaux comptes ne reçoivent pas de code.',
+            style: TextStyle(color: Colors.grey[700]),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${controller.personalCount.value} code(s) créé(s) · ${controller.personalUsed.value} utilisé(s) · '
+            'encaissé : ${_fcfa(controller.personalRevenue.value)}',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editWelcome(BuildContext context) {
+    final percent = TextEditingController(text: controller.welcomePercent.value.toString());
+    var enabled = controller.welcomeEnabled.value;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Code de bienvenue'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: percent,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Remise (%)'),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Offrir un code aux nouveaux comptes'),
+                value: enabled,
+                onChanged: (v) => setLocal(() => enabled = v),
+              ),
+              Text(
+                "S'applique aux codes créés à partir de maintenant.",
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Annuler')),
+            TextButton(
+              onPressed: () async {
+                final error = await controller.saveWelcome(
+                  percent: int.tryParse(percent.text.trim()) ?? 0,
+                  enabled: enabled,
+                );
+                if (error == null && ctx.mounted) Navigator.of(ctx).pop();
+                _snack(error, 'Réglage enregistré.');
+              },
+              child: const Text('Enregistrer'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Totaux de tous les codes : encaissé (brut, avant commission K-Pay), remises, dossiers.
   Widget _totals(List<PromoCode> promos) {
-    final revenue = promos.fold<double>(0, (sum, p) => sum + p.revenue);
-    final discounts = promos.fold<double>(0, (sum, p) => sum + p.discountTotal);
-    final uses = promos.fold<int>(0, (sum, p) => sum + p.uses);
+    final revenue = promos.fold<double>(controller.personalRevenue.value, (sum, p) => sum + p.revenue);
+    final discounts = promos.fold<double>(controller.personalDiscounts.value, (sum, p) => sum + p.discountTotal);
+    final uses = promos.fold<int>(controller.personalUsed.value, (sum, p) => sum + p.uses);
     Widget tile(String label, String value) => Expanded(
           child: Container(
             padding: const EdgeInsets.all(12),
