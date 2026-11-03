@@ -291,6 +291,12 @@ class ProfileView extends GetView<ProfileController> {
           onTap: controller.navigateToTerms,
           iconBg: AppColors.secondary,
         ),
+        _buildMenuItem(
+          icon: Icons.delete_outline_rounded,
+          title: 'Supprimer mon compte',
+          onTap: controller.requestAccountDeletion,
+          iconBg: Colors.red.shade600,
+        ),
       ],
     );
   }

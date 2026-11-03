@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mhdcooperation/data/services/api_client.dart';
 import 'package:mhdcooperation/data/services/session_service.dart';
@@ -82,5 +83,46 @@ class ProfileController extends GetxController {
 
   void navigateToEditProfile() {
     Get.toNamed(AppRoutes.editProfile);
+  }
+
+  /// Demande de suppression du compte et des données associées. Le compte n'est
+  /// pas effacé sur-le-champ : la demande est enregistrée côté serveur et
+  /// traitée par l'équipe sous 30 jours (page web /suppression-compte).
+  Future<void> requestAccountDeletion() async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Supprimer mon compte'),
+        content: const Text(
+          'Votre compte et vos données (profil, dossiers, pièces déposées) seront '
+          'supprimés, sous 30 jours. Seuls les enregistrements de paiement sont '
+          'conservés, pour des raisons comptables. Cette action est définitive.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
+            child: const Text('Demander la suppression'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ApiClient().post('/api/suppression-compte', {'source': 'mobile'});
+      Get.snackbar(
+        'Demande enregistrée',
+        'Votre compte sera supprimé sous 30 jours.',
+        duration: const Duration(seconds: 4),
+      );
+    } on ApiException catch (e) {
+      Get.snackbar('Erreur', e.message);
+    } catch (_) {
+      Get.snackbar('Erreur', 'Impossible d\'envoyer la demande. Réessayez.');
+    }
   }
 }
