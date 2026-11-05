@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
@@ -155,6 +156,10 @@ class PushNotificationService extends GetxService {
   void _handleForegroundMessage(RemoteMessage message) {
     final n = message.notification;
     if (n == null) return;
+    // Sur iPhone, iOS montre déjà la bannière au premier plan
+    // (setForegroundNotificationPresentationOptions) : une notification locale
+    // en plus l'afficherait deux fois.
+    if (defaultTargetPlatform == TargetPlatform.iOS) return;
     _localNotifs.show(
       n.hashCode,
       n.title,

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Mhdcooperation</string>
+	<string>MHD Cooperation</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -65,6 +65,29 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<!-- Seulement HTTPS : chiffrement exempté, plus de question à chaque envoi. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- Schémas testés par canLaunchUrl : sans eux, iOS répond « non ». -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
+		<string>mailto</string>
+		<string>tel</string>
+		<string>sms</string>
+		<string>whatsapp</string>
+	</array>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>MHD Cooperation n'accède à vos fichiers audio que si vous choisissez d'en joindre un à votre dossier.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>MHD Cooperation utilise l'appareil photo pour photographier vos pièces justificatives et votre photo de profil.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>MHD Cooperation accède à vos photos pour joindre des pièces à votre dossier et choisir votre photo de profil.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
 	</array>
 </dict>
 </plist>
