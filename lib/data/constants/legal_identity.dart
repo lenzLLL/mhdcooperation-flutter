@@ -7,8 +7,11 @@
 class LegalIdentity {
   LegalIdentity._();
 
-  static const appName = 'MhD · Mr Help Documents';
-  static const appAlias = 'MHD Cooperation';
+  /// Nom de l'application EXACTEMENT comme sur la fiche Google Play.
+  static const appName = 'mhdcooperation';
+
+  /// Nom commercial affiché dans l'application et sur le site.
+  static const appAlias = 'MhD · Mr Help Documents';
   static const developerName = 'MHD Cooperation';
   static const androidPackage = 'com.mhdcooperation.com.mhdcooperation';
   static const website = 'https://mhdcooperation.site';

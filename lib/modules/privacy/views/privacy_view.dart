@@ -153,7 +153,7 @@ class PrivacyView extends GetView<PrivacyController> {
     const rows = <(String, String)>[
       (
         'Application',
-        '${LegalIdentity.appName} (également affichée « ${LegalIdentity.appAlias} »)',
+        '${LegalIdentity.appName} — nom commercial : ${LegalIdentity.appAlias}',
       ),
       (
         'Développeur et responsable du traitement',
@@ -182,7 +182,7 @@ class PrivacyView extends GetView<PrivacyController> {
           ),
           const SizedBox(height: 12),
           Text(
-            "Cette politique s'applique à l'application ${LegalIdentity.appName} et au site ${LegalIdentity.website.replaceFirst('https://', '')}, édités par ${LegalIdentity.developerName}. Elle explique quelles données nous collectons, pourquoi, et comment vous gardez la main dessus.",
+            "Cette politique s'applique à l'application ${LegalIdentity.appName} (${LegalIdentity.appAlias}) et au site ${LegalIdentity.website.replaceFirst('https://', '')}, édités par ${LegalIdentity.developerName}. Elle explique quelles données nous collectons, pourquoi, et comment vous gardez la main dessus.",
             style: _bodyStyle,
           ),
           const SizedBox(height: 12),
