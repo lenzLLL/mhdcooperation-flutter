@@ -1,9 +1,9 @@
-/// Identité de l'éditeur pour la politique de confidentialité. Miroir de
+/// Identité de l'application pour la politique de confidentialité. Miroir de
 /// `src/lib/legal-identity.ts` côté web (qui prime en cas de divergence).
 ///
 /// Google Play exige que le texte nomme l'application et le développeur
-/// EXACTEMENT comme la fiche du Play Store : si le Play Console affiche un autre
-/// nom, c'est ici qu'il faut l'aligner.
+/// EXACTEMENT comme la fiche du Play Store : si l'un des deux change, c'est ici
+/// qu'il faut l'aligner.
 class LegalIdentity {
   LegalIdentity._();
 
@@ -12,7 +12,9 @@ class LegalIdentity {
 
   /// Nom commercial affiché dans l'application et sur le site.
   static const appAlias = 'MhD · Mr Help Documents';
-  static const developerName = 'MHD Cooperation';
+
+  /// Développeur et responsable du traitement, EXACTEMENT comme sur la fiche Google Play.
+  static const developerName = 'Legaftech Sarl';
   static const androidPackage = 'com.mhdcooperation.com.mhdcooperation';
   static const website = 'https://mhdcooperation.site';
   static const email = 'helpdocs4@gmail.com';

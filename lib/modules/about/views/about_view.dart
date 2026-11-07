@@ -232,7 +232,7 @@ class AboutView extends GetView<AboutController> {
       ),
       child: Column(
         children: [
-          _buildInfoRow('Développeur', 'MHD Cooperation Team'),
+          _buildInfoRow('Développeur', 'Legaftech Sarl'),
           const Divider(height: 20),
           _buildInfoRow('Version', '1.0.1'),
           const Divider(height: 20),
