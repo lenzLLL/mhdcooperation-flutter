@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/data/constants/official_sources.dart';
 import 'package:mhdcooperation/modules/terms/controllers/terms_controller.dart';
 
 class TermsView extends GetView<TermsController> {
@@ -26,7 +27,15 @@ class TermsView extends GetView<TermsController> {
             const SizedBox(height: 24),
 
             _buildSection(
-              title: '2. Compte utilisateur',
+              title: '2. Statut de MhD',
+              content:
+                  '$notGovernmentNotice Les informations affichées proviennent des publications officielles et sont données à titre indicatif : la source officielle fait foi.',
+            ),
+
+            const SizedBox(height: 24),
+
+            _buildSection(
+              title: '3. Compte utilisateur',
               content:
                   'Vous êtes responsable de l\'exactitude des informations fournies et de la confidentialité de vos identifiants. Tout dossier déposé engage votre responsabilité quant à l\'authenticité des pièces.',
             ),
@@ -34,7 +43,7 @@ class TermsView extends GetView<TermsController> {
             const SizedBox(height: 24),
 
             _buildSection(
-              title: '3. Frais et paiements',
+              title: '4. Frais et paiements',
               content:
                   'Les frais affichés correspondent au service ou au concours choisi. Le montant exact est indiqué avant tout paiement. Un dossier n\'est traité qu\'après règlement des frais correspondants.',
             ),
@@ -42,7 +51,7 @@ class TermsView extends GetView<TermsController> {
             const SizedBox(height: 24),
 
             _buildSection(
-              title: '4. Responsabilité',
+              title: '5. Responsabilité',
               content:
                   'MhD s\'engage à accompagner au mieux vos démarches mais ne saurait garantir l\'admission à un concours ni se substituer aux décisions des établissements et administrations.',
             ),
@@ -50,7 +59,7 @@ class TermsView extends GetView<TermsController> {
             const SizedBox(height: 24),
 
             _buildSection(
-              title: '5. Contact',
+              title: '6. Contact',
               content:
                   'Pour toute question relative aux présentes conditions, contactez-nous à helpdocs4@gmail.com.',
             ),

@@ -13,7 +13,7 @@ final List<Services> servicesCatalog = [
     id: '1',
     name: 'Dossiers Concours et Recrutements',
     desc:
-        'Nous mettons à votre disposition la liste de tous les concours disponibles dans le territoire du Cameroun',
+        'Retrouvez les concours ouverts au Cameroun et laissez-nous vous aider à constituer et déposer votre dossier de candidature. Consultez toujours la source officielle.',
   ),
   Services(
     id: '2',
@@ -25,13 +25,13 @@ final List<Services> servicesCatalog = [
     id: '3',
     name: 'Dossiers Passeport/CNI',
     desc:
-        'Constituez vos dossiers de passeport ou de CNI facilement et rapidement grâce à notre équipe expérimentée et dynamique',
+        "Nous vous aidons à constituer et déposer votre dossier de passeport ou de CNI. Les titres sont délivrés par la DGSN : MhD n'est pas une administration.",
   ),
   Services(
     id: '4',
     name: 'Certificat de police',
     desc:
-        'Constituez votre certificat de police facilement et rapidement grâce à notre équipe expérimentée et dynamique',
+        "Nous vous aidons à constituer votre demande de certificat de police. Le certificat est délivré par l'administration : MhD n'est pas une administration.",
   ),
   Services(
     id: '5',

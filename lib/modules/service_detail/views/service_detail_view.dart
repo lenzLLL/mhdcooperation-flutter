@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/data/constants/official_sources.dart';
 import 'package:mhdcooperation/data/models/services.dart';
+import 'package:mhdcooperation/widgets/official_sources_card.dart';
 import 'package:mhdcooperation/data/services/session_service.dart';
 import 'package:mhdcooperation/routes/app_routes.dart';
 import 'school_level_selector.dart';
@@ -113,7 +115,20 @@ class ServiceDetailView extends StatelessWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 32),
+
+                  // Sources officielles : MhD n'est pas une administration.
+                  if ((sourcesByService[service.id] ?? const []).isNotEmpty) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: OfficialSourcesCard(
+                        sources: sourcesByService[service.id]!,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const NotGovernmentNotice(),
+                  ],
+                  const SizedBox(height: 32),
 
                   // Main Action Button
                   SizedBox(

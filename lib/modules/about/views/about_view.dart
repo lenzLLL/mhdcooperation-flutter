@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/data/constants/official_sources.dart';
 import 'package:mhdcooperation/modules/about/controllers/about_controller.dart';
+import 'package:mhdcooperation/widgets/official_sources_card.dart';
 
 class AboutView extends GetView<AboutController> {
   const AboutView({super.key});
@@ -21,6 +23,16 @@ class AboutView extends GetView<AboutController> {
 
             // Description de l'app
             _buildAppDescription(),
+
+            const SizedBox(height: 16),
+
+            // Statut : MhD n'est pas une administration, et d'où viennent les informations.
+            const NotGovernmentNotice(),
+            const SizedBox(height: 12),
+            const SizedBox(
+              width: double.infinity,
+              child: OfficialSourcesCard(sources: allOfficialSources),
+            ),
 
             const SizedBox(height: 32),
 
@@ -65,7 +77,7 @@ class AboutView extends GetView<AboutController> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Version 1.0.0',
+          'Version 1.0.1',
           style: TextStyle(fontSize: 16, color: Colors.grey[600]),
         ),
       ],
@@ -222,7 +234,7 @@ class AboutView extends GetView<AboutController> {
         children: [
           _buildInfoRow('Développeur', 'MHD Cooperation Team'),
           const Divider(height: 20),
-          _buildInfoRow('Version', '1.0.0'),
+          _buildInfoRow('Version', '1.0.1'),
           const Divider(height: 20),
           _buildInfoRow('Dernière mise à jour', 'Mai 2026'),
           const Divider(height: 20),

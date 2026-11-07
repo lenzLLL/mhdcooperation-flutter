@@ -2,8 +2,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mhdcooperation/core/values/app_colors.dart';
+import 'package:mhdcooperation/data/constants/official_sources.dart';
 import 'package:mhdcooperation/data/models/concours.dart';
 import 'package:mhdcooperation/routes/app_routes.dart';
+import 'package:mhdcooperation/widgets/official_sources_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ConcourDetailView extends StatelessWidget {
@@ -348,6 +350,13 @@ class ConcourDetailView extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
+                  const OfficialSourcesCard(
+                    sources: concoursSources,
+                    title: 'Vérifier auprès de la source officielle',
+                  ),
+                  const SizedBox(height: 12),
+                  const NotGovernmentNotice(),
                   const SizedBox(height: 24),
                   Row(
                     children: [

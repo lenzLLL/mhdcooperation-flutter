@@ -1,9 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mhdcooperation/data/constants/official_sources.dart';
 import 'package:mhdcooperation/data/models/concours.dart';
 import 'package:mhdcooperation/data/models/ecoles.dart';
 import 'package:mhdcooperation/modules/school_detail/controllers/school_detail_controller.dart';
+import 'package:mhdcooperation/widgets/official_sources_card.dart';
 
 class SchoolDetailView extends GetView<SchoolDetailController> {
   final School? school;
@@ -153,16 +155,6 @@ class SchoolDetailView extends GetView<SchoolDetailController> {
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  // Features Section
-                  const Text(
-                    'Informations',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildFeatureItem('Établissement reconnu', Icons.verified),
-                  _buildFeatureItem('Formation de qualité', Icons.school),
-                  _buildFeatureItem('Support pédagogique', Icons.support),
                   const SizedBox(height: 32),
                   // Concours Section
                   const Text(
@@ -171,23 +163,17 @@ class SchoolDetailView extends GetView<SchoolDetailController> {
                   ),
                   const SizedBox(height: 16),
                   _buildConcoursList(controller),
+                  const SizedBox(height: 24),
+                  const OfficialSourcesCard(
+                    sources: schoolSources,
+                    title: 'Vérifier auprès de la source officielle',
+                  ),
+                  const SizedBox(height: 12),
+                  const NotGovernmentNotice(),
                 ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeatureItem(String label, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.blue),
-          const SizedBox(width: 12),
-          Text(label),
         ],
       ),
     );

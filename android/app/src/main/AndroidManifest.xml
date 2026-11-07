@@ -52,5 +52,11 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Ouvrir un lien https dans le navigateur (sources officielles, arrêtés PDF) :
+             sans cette déclaration, canLaunchUrl répond « non » sous Android 11 et plus. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
     </queries>
 </manifest>
